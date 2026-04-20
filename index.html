@@ -1619,7 +1619,7 @@
     <div id="resize-handle"></div>
 
     <aside id="sidebar">
-      <div id="drawer-handle" onclick="toggleDrawer()" style="display:none">
+      <div id="drawer-handle" onclick="toggleDrawer()">
         <div id="drawer-pill"></div>
         <span id="drawer-label">KPIs &amp; Dados</span>
       </div>
@@ -3450,6 +3450,27 @@
   </div>
 
   <script>
+    /* DRAWER */
+    function toggleDrawer() {
+      var sidebar = document.getElementById('sidebar');
+      var lbl = document.getElementById('drawer-label');
+      sidebar.classList.toggle('expanded');
+      if (lbl) lbl.textContent = sidebar.classList.contains('expanded') ? 'Fechar' : 'KPIs & Dados';
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      var viewer = document.getElementById('viewer');
+      if (viewer) {
+        viewer.addEventListener('pointerdown', function() {
+          if (window.innerWidth <= 768) {
+            var sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('expanded');
+            var lbl = document.getElementById('drawer-label');
+            if (lbl) lbl.textContent = 'KPIs & Dados';
+          }
+        });
+      }
+    });
+
     (function () {
       let currentStep = 1;
       const totalSteps = 3;
