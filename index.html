@@ -1572,7 +1572,48 @@
       .pc-flow-step  { min-width: 80px !important; }
       .pc-panel  { overflow-x: auto !important; }
       .pc-table  { min-width: 480px !important; }
-    }
+    
+      /* mobile drag chip invite pulse */
+      #drag-chip:not(.applied) {
+        animation: chip-invite 2.5s ease-in-out infinite;
+      }
+      @keyframes chip-invite {
+        0%, 100% { box-shadow: 0 4px 20px rgba(34,197,94,.3); }
+        50%       { box-shadow: 0 4px 32px rgba(34,197,94,.7), 0 0 0 6px rgba(34,197,94,.15); }
+      }
+      #drag-chip.grabbed { animation: none; }
+
+      /* mobile apply button — only shown while dragging on mobile */
+      #mobile-apply-btn {
+        display: none;
+        position: fixed;
+        bottom: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9000;
+        background: rgba(34,197,94,.18);
+        color: var(--green-400);
+        border: 1.5px solid rgba(34,197,94,.5);
+        border-radius: 8px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        padding: 10px 22px;
+        cursor: pointer;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 24px rgba(0,0,0,.5);
+        white-space: nowrap;
+        pointer-events: all;
+      }
+      #mobile-apply-btn.visible { display: block; }
+      #mobile-apply-btn.on-target {
+        background: rgba(34,197,94,.35);
+        border-color: rgba(34,197,94,.9);
+        color: #fff;
+      }
+}
 
     /* touch targets */
     @media (pointer: coarse) {
@@ -1625,6 +1666,7 @@
       <div id="drop-overlay"></div>
       <div id="hit-indicator">Cabine — FORA DE ALCANCE</div>
       <div id="drop-hint">Solte sobre a cabine para aplicar</div>
+      <button id="mobile-apply-btn" onclick="mobileApply()"></button>
       <div id="target-label">Cabine PP</div>
       <div id="plant-container">
         <svg id="plant-svg" width="220" height="200" viewBox="0 0 220 200"></svg>
@@ -2396,6 +2438,16 @@
     dragChip.addEventListener('pointerdown', e => {
       if (isApplied) return;
       e.preventDefault();
+
+      // On mobile: close drawer first so viewer is fully visible, then
+      // teleport ghost to center of viewer and start drag from there.
+      if (window.innerWidth <= 768) {
+        const sb = document.getElementById('sidebar');
+        const lbl = document.getElementById('drawer-label');
+        sb.classList.remove('expanded');
+        if (lbl) lbl.textContent = 'KPIs & Dados';
+      }
+
       isDragging = true;
       dragChip.setPointerCapture(e.pointerId);
       dragChip.classList.add('grabbed');
@@ -2403,11 +2455,26 @@
       moveGhost(e.clientX, e.clientY);
       dropOverlay.classList.add('active');
       dropHint.classList.add('visible');
+      if (window.innerWidth <= 768) {
+        const mab = document.getElementById('mobile-apply-btn');
+        if (mab) { mab.textContent = 'Arrastar até a cabine...'; mab.classList.add('visible'); mab.classList.remove('on-target'); }
+      }
       controls.enabled = false;
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onUp);
     });
-    function onMove(e) { if (!isDragging) return; moveGhost(e.clientX, e.clientY); raycast(e.clientX, e.clientY); }
+    function onMove(e) {
+      if (!isDragging) return;
+      moveGhost(e.clientX, e.clientY);
+      const hit = raycast(e.clientX, e.clientY);
+      if (window.innerWidth <= 768) {
+        const mab = document.getElementById('mobile-apply-btn');
+        if (mab) {
+          mab.classList.toggle('on-target', isNearTarget);
+          mab.textContent = isNearTarget ? '✓ Soltar aqui — Aplicar PP' : 'Arrastar até a cabine...';
+        }
+      }
+    }
     function onUp(e) {
       if (!isDragging) return;
       isDragging = false;
@@ -2418,9 +2485,18 @@
       dropOverlay.classList.remove('active');
       dropHint.classList.remove('visible');
       dragChip.classList.remove('grabbed');
+      if (window.innerWidth <= 768) {
+        const mab = document.getElementById('mobile-apply-btn');
+        if (mab) { mab.classList.remove('visible', 'on-target'); }
+      }
       const r = viewer.getBoundingClientRect();
       const ov = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
       if (ov && isNearTarget && !isApplied) applySubstitution();
+      else if (ov && window.innerWidth <= 768 && !isApplied && targetMesh) {
+        // On mobile a slow drag may never trigger pointermove raycast — try once on release
+        raycast(e.clientX, e.clientY);
+        if (isNearTarget) applySubstitution();
+      }
       else if (!isApplied && cabinShaderMat) cabinShaderMat.uniforms.u_hoverGlow.value = 0.0;
       isNearTarget = false;
       hitIndicator.textContent = 'Cabine — FORA DE ALCANCE';
@@ -2440,7 +2516,7 @@
       confettiParticles = [];
       const colors = ['#4ade80', '#22c55e', '#86efac', '#bbf7d0', '#fde047', '#60a5fa', '#fff', '#a3e635', '#34d399'];
       const shapes = ['circle', 'square', 'star', 'diamond'];
-      for (let i = 0; i < 200; i++) {
+      for (let i = 0; i < (window.innerWidth <= 768 ? 60 : 200); i++) {
         const angle = (Math.random() * Math.PI * 2);
         const speed = 4 + Math.random() * 9;
         confettiParticles.push({
@@ -2508,6 +2584,7 @@
     }
 
 
+    window.addEventListener('mobile-apply-pp', () => { applySubstitution(); });
     function applySubstitution() {
       if (!targetMesh || isApplied) return;
       isApplied = true;
@@ -2543,6 +2620,14 @@
       setTimeout(() => launchConfetti(cx, cy), 300);
 
       setStatusApplied(); setModuleApplied(); animateKPIs(); updateChart(true); showLog(true); growPlant();
+      if (window.innerWidth <= 768) {
+        setTimeout(() => {
+          const sb = document.getElementById('sidebar');
+          const lbl = document.getElementById('drawer-label');
+          sb.classList.add('expanded');
+          if (lbl) lbl.textContent = 'Fechar';
+        }, 900);
+      }
     }
 
     window.resetSubstitution = function () {
@@ -3466,6 +3551,31 @@
 
   <script>
     /* DRAWER */
+    function mobileApply() {
+      if (isApplied) return;
+      // Force apply regardless of exact raycast hit — user confirmed intent
+      const mab = document.getElementById('mobile-apply-btn');
+      if (mab) mab.classList.remove('visible', 'on-target');
+      isDragging = false;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      if (typeof controls !== 'undefined') controls.enabled = true;
+      const ghost = document.getElementById('ghost');
+      const dropOverlay = document.getElementById('drop-overlay');
+      const dropHint = document.getElementById('drop-hint');
+      const dragChip = document.getElementById('drag-chip');
+      if (ghost) ghost.classList.remove('active', 'on-target');
+      if (dropOverlay) dropOverlay.classList.remove('active');
+      if (dropHint) dropHint.classList.remove('visible');
+      if (dragChip) dragChip.classList.remove('grabbed');
+      // Try raycast from center of viewer, then apply
+      const viewer = document.getElementById('viewer');
+      const vr = viewer.getBoundingClientRect();
+      const cx = vr.left + vr.width / 2;
+      const cy = vr.top + vr.height / 2;
+      // applySubstitution is in module scope — use a custom event
+      window.dispatchEvent(new CustomEvent('mobile-apply-pp'));
+    }
     function toggleDrawer() {
       var s = document.getElementById('sidebar');
       var l = document.getElementById('drawer-label');
