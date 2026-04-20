@@ -1418,9 +1418,9 @@
       border-radius: 3px
     }
 
-    /* ══ RESPONSIVE ══ */
+        /* ══ RESPONSIVE ══ */
 
-    /* tablet */
+    /* ── Tablet ── */
     @media (min-width: 769px) and (max-width: 1100px) {
       :root { --sidebar-w: 330px; }
       .pc-frame { width: 90vw !important; }
@@ -1428,8 +1428,10 @@
       .chart-wrap { height: 180px; }
     }
 
-    /* mobile */
+    /* ── Mobile ── */
     @media (max-width: 768px) {
+
+      /* topbar compacto */
       #topbar { padding: 0 12px; }
       .topbar-brand { font-size: 10px; gap: 7px; }
       .topbar-brand span[style] { display: none; }
@@ -1438,114 +1440,141 @@
       .status-badge { display: none; }
       .tb-btn { font-size: 9px; padding: 4px 9px; }
 
-      /* make root a column instead of grid */
+      /* root: flexbox vertical */
       #root {
         display: flex !important;
         flex-direction: column !important;
-        height: 100svh !important;
+        height: 100dvh !important;
+        overflow: hidden !important;
       }
-      #topbar  { flex-shrink: 0; grid-column: unset; }
-      #viewer  { flex: 1 1 0; min-height: 0; grid-row: unset; }
+      #topbar       { flex-shrink: 0; grid-column: unset !important; }
+      #viewer       { flex: 1 1 0 !important; min-height: 0 !important; grid-row: unset !important; }
       #resize-handle { display: none !important; }
 
-      /* sidebar: full-height panel, slides up from bottom */
+      /*
+        DRAWER — posição fixa na base.
+        A chave: transform: translateY(calc(100% - 52px))
+        Em transform, 100% = altura do PRÓPRIO ELEMENTO.
+        Isso empurra o painel para baixo mostrando só os 52px do handle.
+        Ao adicionar .expanded, translateY(0) traz tudo para cima.
+      */
       #sidebar {
         position: fixed !important;
-        left: 0; right: 0; bottom: 0;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: calc(100dvh - 48px) !important;
         width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
-        /* full height minus topbar */
-        height: calc(100svh - 48px) !important;
         border-left: none !important;
-        border-top: 1px solid var(--border);
-        border-radius: 16px 16px 0 0;
+        border-top: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 16px 16px 0 0 !important;
         padding: 0 !important;
         gap: 0 !important;
         display: flex !important;
         flex-direction: column !important;
         overflow: hidden !important;
-        z-index: 500;
-        box-shadow: 0 -8px 40px rgba(0,0,0,.65);
-        /* collapsed: shifted down, only the 52px handle visible */
-        transform: translateY(calc(100svh - 48px - 52px)) !important;
-        transition: transform .36s cubic-bezier(.22,1,.36,1) !important;
-        will-change: transform;
+        z-index: 600 !important;
+        background: var(--bg-panel) !important;
+        box-shadow: 0 -8px 40px rgba(0,0,0,.65) !important;
+        transform: translateY(calc(100% - 52px)) !important;
+        transition: transform .35s cubic-bezier(.22, 1, .36, 1) !important;
+        will-change: transform !important;
       }
+
       #sidebar.expanded {
         transform: translateY(0) !important;
       }
 
-      /* handle bar */
+      /* handle visível */
       #drawer-handle {
         display: flex !important;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        flex-shrink: 0;
-        height: 52px;
-        cursor: pointer;
-        background: var(--bg-panel);
-        border-radius: 16px 16px 0 0;
-        -webkit-tap-highlight-color: transparent;
-        user-select: none;
-        touch-action: manipulation;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 5px !important;
+        flex-shrink: 0 !important;
+        height: 52px !important;
+        min-height: 52px !important;
+        width: 100% !important;
+        cursor: pointer !important;
+        background: var(--bg-panel) !important;
+        border-radius: 16px 16px 0 0 !important;
+        -webkit-tap-highlight-color: transparent !important;
+        user-select: none !important;
+        touch-action: manipulation !important;
+        padding: 0 !important;
+        border: none !important;
       }
+
       #drawer-pill {
-        width: 40px; height: 4px; border-radius: 2px;
-        background: rgba(255,255,255,.25);
+        width: 40px !important;
+        height: 4px !important;
+        border-radius: 2px !important;
+        background: rgba(255,255,255,.28) !important;
+        flex-shrink: 0 !important;
       }
+
       #drawer-label {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
-        color: var(--text-secondary);
+        font-family: 'IBM Plex Mono', monospace !important;
+        font-size: 9px !important;
+        letter-spacing: .1em !important;
+        text-transform: uppercase !important;
+        color: var(--text-secondary) !important;
       }
 
-      /* scrollable content inside drawer */
+      /* área scrollável dentro do drawer */
       #sidebar-content {
-        flex: 1 1 0;
+        flex: 1 1 0 !important;
         overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
-        padding: 4px 14px 32px;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 8px 14px 40px !important;
         display: flex !important;
-        flex-direction: column;
-        gap: 12px;
+        flex-direction: column !important;
+        gap: 12px !important;
       }
 
-      /* smaller elements */
-      .chart-wrap { height: 160px; }
-      .kpi-value { font-size: 13px; }
-      .kpi-label { font-size: 8px; }
-      .kpi-delta { font-size: 8px; }
-      #watermark { display: none; }
-      #plant-container { width: 90px; height: 80px; }
-      #plant-svg { width: 90px; height: 80px; }
-      #drop-hint { bottom: 70px; font-size: 10px; padding: 6px 14px; }
+      /* ajustes visuais */
+      .chart-wrap    { height: 160px !important; }
+      .kpi-value     { font-size: 13px !important; }
+      .kpi-label     { font-size: 8px !important; }
+      .kpi-delta     { font-size: 8px !important; }
+      #watermark     { display: none !important; }
+      #plant-container { width: 90px !important; height: 80px !important; }
+      #plant-svg     { width: 90px !important; height: 80px !important; }
+      #drop-hint     { bottom: 70px; font-size: 10px; padding: 6px 14px; }
       #hit-indicator { font-size: 9px; top: 10px; left: 10px; }
 
-      /* full-screen modals */
-      .modal-overlay { align-items: flex-end; }
+      /* modais full-screen */
+      .modal-overlay { align-items: flex-end !important; }
       .phone-frame {
-        width: 100vw !important; height: 100svh !important;
-        border-radius: 0 !important; border: none !important;
-        display: flex; flex-direction: column;
-      }
-      .phone-screen { max-height: none !important; flex: 1; }
-      .pc-frame {
-        width: 100vw !important; height: 100svh !important;
+        width: 100vw !important;
+        height: 100dvh !important;
         border-radius: 0 !important;
-        display: flex; flex-direction: column;
+        border: none !important;
+        display: flex !important;
+        flex-direction: column !important;
       }
-      .pc-screen { max-height: none !important; flex: 1; overflow-y: auto; }
-      .pc-grid3 { grid-template-columns: 1fr 1fr; }
-      .pc-flow { flex-wrap: wrap; gap: 6px; }
-      .pc-flow-arrow { display: none; }
-      .pc-flow-step { min-width: 80px; }
-      .pc-panel { overflow-x: auto; }
-      .pc-table { min-width: 480px; }
+      .phone-screen { max-height: none !important; flex: 1 !important; }
+      .pc-frame {
+        width: 100vw !important;
+        height: 100dvh !important;
+        border-radius: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .pc-screen { max-height: none !important; flex: 1 !important; overflow-y: auto !important; }
+      .pc-grid3  { grid-template-columns: 1fr 1fr !important; }
+      .pc-flow   { flex-wrap: wrap !important; gap: 6px !important; }
+      .pc-flow-arrow { display: none !important; }
+      .pc-flow-step  { min-width: 80px !important; }
+      .pc-panel  { overflow-x: auto !important; }
+      .pc-table  { min-width: 480px !important; }
     }
 
+    /* touch targets */
     @media (pointer: coarse) {
       .tb-btn { padding: 8px 14px; min-height: 36px; }
       .phone-tab { padding: 12px 4px; }
@@ -1553,15 +1582,15 @@
       #drag-chip { width: 64px; height: 64px; }
     }
 
-    /* tour responsive */
+    /* tour em telas pequenas */
     @media (max-width: 540px) {
-      #tour-card { width: calc(100vw - 24px) !important; border-radius: 14px; }
-      .tour-step-visual { height: 110px; }
-      .tour-step-body { padding: 12px 16px 10px; }
-      .tour-step-heading { font-size: 12px; }
-      .tour-step-text { font-size: 11px; }
-      .tour-footer { padding: 10px 16px 14px; }
-      .tour-btn { font-size: 9px; padding: 6px 11px; }
+      #tour-card { width: calc(100vw - 24px) !important; border-radius: 14px !important; }
+      .tour-step-visual { height: 110px !important; }
+      .tour-step-body { padding: 12px 16px 10px !important; }
+      .tour-step-heading { font-size: 12px !important; }
+      .tour-step-text { font-size: 11px !important; }
+      .tour-footer { padding: 10px 16px 14px !important; }
+      .tour-btn { font-size: 9px !important; padding: 6px 11px !important; }
     }
 
   </style>
@@ -3438,26 +3467,25 @@
   <script>
     /* DRAWER */
     function toggleDrawer() {
-      var sidebar = document.getElementById('sidebar');
-      var lbl = document.getElementById('drawer-label');
-      var isOpen = sidebar.classList.toggle('expanded');
-      if (lbl) lbl.textContent = isOpen ? 'Fechar' : 'KPIs & Dados';
+      var s = document.getElementById('sidebar');
+      var l = document.getElementById('drawer-label');
+      var open = s.classList.toggle('expanded');
+      if (l) l.textContent = open ? 'Fechar' : 'KPIs & Dados';
     }
-    /* close when tapping the 3D viewer */
     (function() {
-      function attachViewerClose() {
-        var viewer = document.getElementById('viewer');
-        if (!viewer) { setTimeout(attachViewerClose, 200); return; }
-        viewer.addEventListener('pointerdown', function() {
+      function setup() {
+        var v = document.getElementById('viewer');
+        if (!v) { setTimeout(setup, 100); return; }
+        v.addEventListener('pointerdown', function() {
           if (window.innerWidth <= 768) {
-            var sidebar = document.getElementById('sidebar');
-            sidebar.classList.remove('expanded');
-            var lbl = document.getElementById('drawer-label');
-            if (lbl) lbl.textContent = 'KPIs & Dados';
+            var s = document.getElementById('sidebar');
+            s.classList.remove('expanded');
+            var l = document.getElementById('drawer-label');
+            if (l) l.textContent = 'KPIs & Dados';
           }
         });
       }
-      attachViewerClose();
+      setup();
     })();
 
     (function () {
