@@ -1,658 +1,2059 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CSM Simulação — Carenagem Sustentável</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --bg-base:#080d14; --bg-panel:#0d1521; --bg-card:#111d2e;
-      --border:rgba(255,255,255,0.06); --border-accent:rgba(34,197,94,0.35);
-      --green-400:#4ade80; --green-500:#22c55e; --green-600:#16a34a;
-      --amber-400:#fbbf24; --blue-400:#60a5fa; --red-400:#f87171;
-      --text-primary:#e8edf3; --text-secondary:#7a8fa6;
-      --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
-      --sidebar-w:410px;
+      --bg-base: #080d14;
+      --bg-panel: #0d1521;
+      --bg-card: #111d2e;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-accent: rgba(34, 197, 94, 0.35);
+      --green-400: #4ade80;
+      --green-500: #22c55e;
+      --green-600: #16a34a;
+      --amber-400: #fbbf24;
+      --blue-400: #60a5fa;
+      --red-400: #f87171;
+      --text-primary: #e8edf3;
+      --text-secondary: #7a8fa6;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --sidebar-w: 410px;
     }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg-base);color:var(--text-primary);height:100vh;overflow:hidden;user-select:none}
-    #root{display:grid;grid-template-columns:1fr 5px var(--sidebar-w);grid-template-rows:48px 1fr;height:100vh}
 
-    #watermark{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;opacity:.32}
-    .wm-brand{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--green-400)}
-    .wm-sub{font-family:'DM Sans',sans-serif;font-size:9px;color:var(--text-secondary);letter-spacing:.04em}
-
-    #topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--bg-panel);border-bottom:1px solid var(--border)}
-    .topbar-brand{display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
-    .topbar-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--green-500);animation:pulse-dot 2s ease-in-out infinite}
-    @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
-    .topbar-meta{display:flex;gap:10px;align-items:center}
-    .topbar-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-secondary);letter-spacing:.06em;text-transform:uppercase}
-    .status-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 8px;border-radius:var(--radius-sm);background:rgba(96,165,250,.12);color:var(--blue-400);border:1px solid rgba(96,165,250,.25);letter-spacing:.06em;transition:all .4s ease}
-    .tb-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;border:1px solid}
-    .tb-btn-phone{background:rgba(96,165,250,.1);color:var(--blue-400);border-color:rgba(96,165,250,.3)}
-    .tb-btn-phone:hover{background:rgba(96,165,250,.22);border-color:rgba(96,165,250,.6)}
-    .tb-btn-pc{background:rgba(251,191,36,.1);color:var(--amber-400);border-color:rgba(251,191,36,.3)}
-    .tb-btn-pc:hover{background:rgba(251,191,36,.22);border-color:rgba(251,191,36,.6)}
-
-    #viewer{position:relative;background:var(--bg-base);overflow:hidden;grid-row:2}
-    #drop-overlay{position:absolute;inset:0;border:2px dashed transparent;border-radius:var(--radius-md);pointer-events:none;transition:border-color .2s,background .2s}
-    #drop-overlay.active{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.03)}
-    #drop-hint{position:absolute;bottom:200px;left:50%;transform:translateX(-50%);background:rgba(13,21,33,.88);border:1px solid var(--border-accent);border-radius:var(--radius-md);padding:8px 18px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green-400);letter-spacing:.06em;pointer-events:none;opacity:0;transition:opacity .3s}
-    #drop-hint.visible{opacity:1}
-    #hit-indicator{position:absolute;top:16px;left:16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-secondary);letter-spacing:.05em;pointer-events:none;background:rgba(8,13,20,.75);padding:4px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);transition:color .15s}
-    #hit-indicator.hit{color:var(--green-400);border-color:rgba(34,197,94,.3)}
-    #target-label{position:absolute;pointer-events:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#fff;background:rgba(59,130,246,.82);border:1px solid rgba(96,165,250,.5);padding:2px 8px;border-radius:4px;letter-spacing:.06em;opacity:0;transition:opacity .4s;white-space:nowrap}
-    #target-label.visible{opacity:0}
-    #plant-container{position:absolute;bottom:0;right:0;width:220px;height:200px;pointer-events:none}
-    #plant-svg{overflow:visible}
-
-    #confetti-canvas{position:absolute;inset:0;pointer-events:none;z-index:100}
-
-    #resize-handle{grid-row:2;width:5px;background:transparent;cursor:col-resize;position:relative;z-index:10;transition:background .15s}
-    #resize-handle:hover,#resize-handle.dragging{background:rgba(34,197,94,.35)}
-    #resize-handle::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:1px;height:40px;background:rgba(34,197,94,.3);border-radius:1px}
-
-    #sidebar{background:var(--bg-panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;padding:16px;gap:14px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;min-width:280px;max-width:700px}
-    #sidebar::-webkit-scrollbar{width:4px}
-    #sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-
-    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;transition:border-color .3s}
-    .card-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:10px}
-    .module-visual{display:flex;align-items:center;gap:14px;margin:12px 0}
-    #drag-chip{width:56px;height:56px;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--green-600),var(--green-400));box-shadow:0 4px 20px rgba(34,197,94,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;flex-shrink:0;touch-action:none;transition:transform .15s,box-shadow .15s}
-    #drag-chip:hover{transform:scale(1.06);box-shadow:0 6px 28px rgba(34,197,94,.45)}
-    #drag-chip.grabbed{cursor:grabbing;transform:scale(1.1)}
-    #drag-chip.applied{background:linear-gradient(135deg,#166534,var(--green-600));cursor:default;box-shadow:0 4px 16px rgba(34,197,94,.18)}
-    .chip-label{font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;letter-spacing:.08em;color:rgba(0,0,0,.7);margin-top:2px}
-    .module-name{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600}
-    .module-sub{font-size:11px;color:var(--text-secondary);margin-top:2px}
-    .module-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
-    .tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
-    .tag-green{background:rgba(34,197,94,.12);color:var(--green-400);border:1px solid rgba(34,197,94,.2)}
-    .tag-gray{background:rgba(255,255,255,.05);color:var(--text-secondary);border:1px solid var(--border)}
-    .instruction-row{display:flex;align-items:center;gap:8px;margin-top:12px;padding:8px 10px;background:rgba(34,197,94,.06);border:1px dashed rgba(34,197,94,.25);border-radius:var(--radius-sm);transition:background .3s,border-color .3s}
-    .instruction-text{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--green-400);letter-spacing:.04em}
-    #reset-btn{display:none;width:100%;margin-top:10px;padding:9px 0;border-radius:var(--radius-sm);background:rgba(248,113,113,.1);color:var(--red-400);border:1px solid rgba(248,113,113,.3);font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .2s}
-    #reset-btn:hover{background:rgba(248,113,113,.2);border-color:rgba(248,113,113,.55)}
-    #reset-btn:active{transform:scale(.98)}
-    #reset-btn.visible{display:block}
-
-    .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .kpi-item{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px}
-    .kpi-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
-    .kpi-value{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;line-height:1;transition:color .4s}
-    .kpi-value.applied{color:var(--green-400)}
-    .kpi-delta{font-family:'IBM Plex Mono',monospace;font-size:9px;margin-top:3px;color:var(--text-secondary)}
-    .kpi-delta.good{color:var(--green-400)}
-
-    .chart-wrap{position:relative;height:220px}
-    #chart-tooltip{
-      position:fixed;
-      pointer-events:none;
-      background:#0a1220;
-      border:1px solid rgba(34,197,94,.3);
-      border-radius:10px;
-      padding:12px 14px;
-      font-family:'IBM Plex Mono',monospace;
-      font-size:10px;
-      color:var(--text-primary);
-      opacity:0;
-      transition:opacity .18s;
-      z-index:99999;
-      width:240px;
-      box-shadow:0 8px 32px rgba(0,0,0,.6);
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
     }
-    #chart-tooltip.visible{opacity:1}
-    #tt-title{font-size:11px;font-weight:600;color:var(--green-400);margin-bottom:8px;border-bottom:1px solid rgba(34,197,94,.2);padding-bottom:6px}
-    .tt-row{display:flex;justify-content:space-between;gap:10px;margin-bottom:4px;color:var(--text-secondary)}
-    .tt-row span:last-child{color:var(--text-primary)}
-    #tt-desc{margin-top:8px;font-size:9.5px;color:var(--text-secondary);line-height:1.55;font-family:'DM Sans',sans-serif;border-top:1px solid rgba(255,255,255,.06);padding-top:6px}
 
-    .chart-legend{display:flex;gap:14px;margin-top:8px}
-    .legend-item{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary)}
-    .legend-item.green{color:var(--green-400)}
-    .legend-line{width:10px;height:2px;border-radius:2px;display:inline-block}
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+      user-select: none
+    }
 
-    #result-log{display:flex;flex-direction:column}
-    .log-line{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid var(--border);opacity:0;transform:translateY(5px);animation:log-in .3s ease forwards}
-    .log-line:last-child{border-bottom:none}
-    @keyframes log-in{to{opacity:1;transform:translateY(0)}}
-    .log-dot{width:6px;height:6px;border-radius:50%;margin-top:3px;flex-shrink:0}
-    .log-dot.green{background:var(--green-500)}
-    .log-dot.gray{background:var(--text-secondary)}
-    .log-dot.red{background:var(--red-400)}
+    #root {
+      display: grid;
+      grid-template-columns: 1fr 5px var(--sidebar-w);
+      grid-template-rows: 48px 1fr;
+      height: 100vh
+    }
 
-    #ghost{position:fixed;width:56px;height:56px;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--green-600),var(--green-400));box-shadow:0 8px 32px rgba(34,197,94,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:9999;opacity:0;transition:opacity .15s;transform:translate(-50%,-50%) scale(1.1)}
-    #ghost.active{opacity:.92}
-    #ghost.on-target{box-shadow:0 0 0 3px rgba(34,197,94,.65),0 8px 32px rgba(34,197,94,.6)}
-    #module-card.applied{border-color:rgba(34,197,94,.35);background:linear-gradient(145deg,var(--bg-card),rgba(34,197,94,.03))}
 
-    @keyframes grow-up{from{transform:scaleY(0);transform-origin:50% 100%}to{transform:scaleY(1);transform-origin:50% 100%}}
-    @keyframes bloom-in{from{transform:scale(0) rotate(-20deg);opacity:0}to{transform:scale(1) rotate(0deg);opacity:1}}
-    @keyframes leaf-pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
-    @keyframes fade-out-plant{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(10px)}}
+    #watermark {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      opacity: .32
+    }
 
-    .modal-overlay{position:fixed;inset:0;background:rgba(4,8,16,.78);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
-    .modal-overlay.open{opacity:1;pointer-events:all}
-    .modal-close{position:absolute;top:10px;right:12px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--text-secondary);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;z-index:5;line-height:1}
-    .modal-close:hover{background:rgba(255,255,255,.14);color:var(--text-primary)}
+    .wm-brand {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--green-400)
+    }
 
-    .phone-frame{width:316px;background:#0a0f1a;border-radius:40px;border:6px solid #1a2840;overflow:hidden;position:relative;box-shadow:0 32px 80px rgba(0,0,0,.75)}
-    .phone-notch{width:100%;height:32px;background:#060b12;display:flex;align-items:center;justify-content:center}
-    .phone-notch-pill{width:80px;height:14px;background:#0d1521;border-radius:20px}
-    .phone-screen{background:#080d14;max-height:580px;overflow-y:auto;scrollbar-width:none}
-    .phone-screen::-webkit-scrollbar{display:none}
-    .phone-home-bar{width:100%;height:28px;background:#060b12;display:flex;align-items:center;justify-content:center}
-    .phone-home-pill{width:100px;height:5px;background:#1e2d42;border-radius:10px}
-    .app-header{padding:14px 18px 10px;background:#0d1521;border-bottom:1px solid rgba(255,255,255,.06)}
-    .app-logo-row{display:flex;align-items:center;gap:10px;margin-bottom:3px}
-    .app-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#1d4ed8,#60a5fa);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-    .app-title{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
-    .app-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary);letter-spacing:.06em}
+    .wm-sub {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 9px;
+      color: var(--text-secondary);
+      letter-spacing: .04em
+    }
 
-    .phone-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.06);background:#0d1521}
-    .phone-tab{flex:1;padding:9px 4px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary);cursor:pointer;transition:color .2s,border-bottom .2s;border-bottom:2px solid transparent}
-    .phone-tab.active{color:var(--blue-400);border-bottom-color:var(--blue-400)}
-    .phone-tab-panel{display:none}
-    .phone-tab-panel.active{display:block}
+    #topbar {
+      grid-column: 1/-1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border)
+    }
 
-    .ph-section{margin:12px 14px 0}
-    .ph-section-title{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:7px}
-    .ph-card{background:#0d1521;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:11px}
-    .ph-qr-row{display:flex;align-items:center;gap:11px}
-    .ph-qr{width:46px;height:46px;border-radius:7px;background:#111d2e;border:1px solid rgba(96,165,250,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-    .ph-module-id{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--blue-400)}
-    .ph-module-name{font-size:11px;color:var(--text-secondary);margin-top:2px}
-    .ph-badge-row{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap}
-    .ph-badge{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(96,165,250,.1);color:var(--blue-400);border:1px solid rgba(96,165,250,.2)}
-    .ph-badge.green{background:rgba(34,197,94,.1);color:var(--green-400);border-color:rgba(34,197,94,.2)}
-    .ph-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-    .ph-row:last-child{border-bottom:none}
-    .ph-row-label{font-size:11px;color:var(--text-secondary)}
-    .ph-row-val{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-primary);font-weight:500}
-    .ph-row-val.green{color:var(--green-400)}
-    .ph-row-val.amber{color:var(--amber-400)}
-    .ph-destino{background:#0d1521;border:1px solid rgba(34,197,94,.28);border-radius:10px;padding:12px;margin:12px 14px 14px}
-    .ph-progress-bar{width:100%;height:5px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:7px;overflow:hidden}
-    .ph-progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green-600),var(--green-400))}
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase
+    }
 
-    .co2-hero{margin:14px;background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(74,222,128,.06));border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:16px;text-align:center}
-    .co2-big{font-family:'IBM Plex Mono',monospace;font-size:36px;font-weight:600;color:var(--green-400);line-height:1;animation:count-up .8s ease forwards}
-    .co2-unit{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-secondary);margin-top:4px}
-    .co2-label{font-size:12px;color:var(--text-secondary);margin-top:6px}
-    .co2-equiv{margin:12px 14px;display:flex;flex-direction:column;gap:8px}
-    .co2-equiv-card{background:#0d1521;border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:10px 12px;display:flex;align-items:center;gap:10px}
-    .co2-equiv-icon{font-size:20px;flex-shrink:0}
-    .co2-equiv-text{font-size:11px;color:var(--text-secondary);line-height:1.4}
-    .co2-equiv-val{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green-400);font-weight:600}
-    .co2-timeline{margin:12px 14px 14px}
-    .co2-bar-row{margin-bottom:8px}
-    .co2-bar-head{display:flex;justify-content:space-between;margin-bottom:3px}
-    .co2-bar-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary)}
-    .co2-bar-val{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--green-400)}
-    .co2-bar-track{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
-    .co2-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green-600),var(--green-400));transition:width .6s ease}
-    .co2-fleet-note{margin:0 14px 14px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary);line-height:1.5;padding:8px;background:rgba(255,255,255,.03);border-radius:6px;border:1px solid var(--border)}
-    @keyframes count-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .topbar-brand .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green-500);
+      animation: pulse-dot 2s ease-in-out infinite
+    }
 
-    .pc-frame{width:800px;background:#0a0f1a;border-radius:10px 10px 6px 6px;border:1px solid #1e2d42;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.75);position:relative}
-    .pc-titlebar{height:36px;background:#060b12;display:flex;align-items:center;padding:0 14px;gap:7px;border-bottom:1px solid #1e2d42}
-    .pc-dot{width:12px;height:12px;border-radius:50%;border:none;cursor:pointer;flex-shrink:0}
-    .pc-title{flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-secondary);letter-spacing:.06em}
-    .pc-screen{background:#080d14;padding:18px;max-height:80vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
-    .pc-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
-    .pc-stat{background:#0d1521;border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:13px}
-    .pc-stat-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:5px}
-    .pc-stat-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600}
-    .pc-stat-val.green{color:var(--green-400)}
-    .pc-stat-val.blue{color:var(--blue-400)}
-    .pc-stat-sub{font-size:11px;color:var(--text-secondary);margin-top:3px}
-    .pc-panel{background:#0d1521;border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:13px;margin-bottom:12px}
-    .pc-panel:last-child{margin-bottom:0}
-    .pc-panel-title{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:11px}
-    .pc-flow{display:flex;align-items:center}
-    .pc-flow-step{flex:1;background:#111d2e;border:1px solid rgba(255,255,255,.06);border-radius:7px;padding:9px 7px;text-align:center}
-    .pc-flow-step-icon{font-size:18px;margin-bottom:4px}
-    .pc-flow-step-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary)}
-    .pc-flow-step-sub{font-size:10px;color:var(--text-secondary);margin-top:1px}
-    .pc-flow-arrow{padding:0 5px;color:rgba(255,255,255,.18);font-size:16px;flex-shrink:0}
-    .pc-table{width:100%;border-collapse:collapse}
-    .pc-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-secondary);text-align:left;padding:0 10px 8px 0;border-bottom:1px solid rgba(255,255,255,.07)}
-    .pc-table td{font-size:11px;color:var(--text-secondary);padding:7px 10px 7px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-    .pc-table td:first-child{font-family:'IBM Plex Mono',monospace;color:var(--text-primary)}
-    .pill{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:2px 8px;border-radius:4px;display:inline-block}
-    .pill.green{background:rgba(34,197,94,.1);color:var(--green-400);border:1px solid rgba(34,197,94,.2)}
-    .pill.amber{background:rgba(251,191,36,.1);color:var(--amber-400);border:1px solid rgba(251,191,36,.2)}
-    .pill.blue{background:rgba(96,165,250,.1);color:var(--blue-400);border:1px solid rgba(96,165,250,.2)}
-    .pc-bar-row{margin-bottom:9px}
-    .pc-bar-header{display:flex;justify-content:space-between;margin-bottom:4px}
-    .pc-bar-label{font-family:'IBM Plex Mono',monospace;font-size:10px}
-    .pc-bar-track{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
-    .pc-bar-fill{height:100%;border-radius:3px}
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    .topbar-meta {
+      display: flex;
+      gap: 10px;
+      align-items: center
+    }
+
+    .topbar-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-secondary);
+      letter-spacing: .06em;
+      text-transform: uppercase
+    }
+
+    .status-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: rgba(96, 165, 250, .12);
+      color: var(--blue-400);
+      border: 1px solid rgba(96, 165, 250, .25);
+      letter-spacing: .06em;
+      transition: all .4s ease
+    }
+
+    .tb-btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all .2s;
+      border: 1px solid
+    }
+
+    .tb-btn-phone {
+      background: rgba(96, 165, 250, .1);
+      color: var(--blue-400);
+      border-color: rgba(96, 165, 250, .3)
+    }
+
+    .tb-btn-phone:hover {
+      background: rgba(96, 165, 250, .22);
+      border-color: rgba(96, 165, 250, .6)
+    }
+
+    .tb-btn-pc {
+      background: rgba(251, 191, 36, .1);
+      color: var(--amber-400);
+      border-color: rgba(251, 191, 36, .3)
+    }
+
+    .tb-btn-pc:hover {
+      background: rgba(251, 191, 36, .22);
+      border-color: rgba(251, 191, 36, .6)
+    }
+
+    #viewer {
+      position: relative;
+      background: var(--bg-base);
+      overflow: hidden;
+      grid-row: 2
+    }
+
+    #drop-overlay {
+      position: absolute;
+      inset: 0;
+      border: 2px dashed transparent;
+      border-radius: var(--radius-md);
+      pointer-events: none;
+      transition: border-color .2s, background .2s
+    }
+
+    #drop-overlay.active {
+      border-color: rgba(34, 197, 94, .4);
+      background: rgba(34, 197, 94, .03)
+    }
+
+    #drop-hint {
+      position: absolute;
+      bottom: 200px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(13, 21, 33, .88);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-md);
+      padding: 8px 18px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--green-400);
+      letter-spacing: .06em;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .3s
+    }
+
+    #drop-hint.visible {
+      opacity: 1
+    }
+
+    #hit-indicator {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-secondary);
+      letter-spacing: .05em;
+      pointer-events: none;
+      background: rgba(8, 13, 20, .75);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      transition: color .15s
+    }
+
+    #hit-indicator.hit {
+      color: var(--green-400);
+      border-color: rgba(34, 197, 94, .3)
+    }
+
+    #target-label {
+      position: absolute;
+      pointer-events: none;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: #fff;
+      background: rgba(59, 130, 246, .82);
+      border: 1px solid rgba(96, 165, 250, .5);
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: .06em;
+      opacity: 0;
+      transition: opacity .4s;
+      white-space: nowrap
+    }
+
+    #target-label.visible {
+      opacity: 0
+    }
+
+    #plant-container {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 220px;
+      height: 200px;
+      pointer-events: none
+    }
+
+    #plant-svg {
+      overflow: visible
+    }
+
+
+    #confetti-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100
+    }
+
+    #resize-handle {
+      grid-row: 2;
+      width: 5px;
+      background: transparent;
+      cursor: col-resize;
+      position: relative;
+      z-index: 10;
+      transition: background .15s
+    }
+
+    #resize-handle:hover,
+    #resize-handle.dragging {
+      background: rgba(34, 197, 94, .35)
+    }
+
+    #resize-handle::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 1px;
+      height: 40px;
+      background: rgba(34, 197, 94, .3);
+      border-radius: 1px
+    }
+
+    #sidebar {
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 16px;
+      gap: 14px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      min-width: 280px;
+      max-width: 700px
+    }
+
+    #sidebar::-webkit-scrollbar {
+      width: 4px
+    }
+
+    #sidebar::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      transition: border-color .3s
+    }
+
+    .card-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 10px
+    }
+
+    .module-visual {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 12px 0
+    }
+
+    #drag-chip {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--green-600), var(--green-400));
+      box-shadow: 0 4px 20px rgba(34, 197, 94, .3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      flex-shrink: 0;
+      touch-action: none;
+      transition: transform .15s, box-shadow .15s
+    }
+
+    #drag-chip:hover {
+      transform: scale(1.06);
+      box-shadow: 0 6px 28px rgba(34, 197, 94, .45)
+    }
+
+    #drag-chip.grabbed {
+      cursor: grabbing;
+      transform: scale(1.1)
+    }
+
+    #drag-chip.applied {
+      background: linear-gradient(135deg, #166534, var(--green-600));
+      cursor: default;
+      box-shadow: 0 4px 16px rgba(34, 197, 94, .18)
+    }
+
+    .chip-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 7px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      color: rgba(0, 0, 0, .7);
+      margin-top: 2px
+    }
+
+    .module-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 600
+    }
+
+    .module-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px
+    }
+
+    .module-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px
+    }
+
+    .tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px
+    }
+
+    .tag-green {
+      background: rgba(34, 197, 94, .12);
+      color: var(--green-400);
+      border: 1px solid rgba(34, 197, 94, .2)
+    }
+
+    .tag-gray {
+      background: rgba(255, 255, 255, .05);
+      color: var(--text-secondary);
+      border: 1px solid var(--border)
+    }
+
+    .instruction-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 8px 10px;
+      background: rgba(34, 197, 94, .06);
+      border: 1px dashed rgba(34, 197, 94, .25);
+      border-radius: var(--radius-sm);
+      transition: background .3s, border-color .3s
+    }
+
+    .instruction-text {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--green-400);
+      letter-spacing: .04em
+    }
+
+    #reset-btn {
+      display: none;
+      width: 100%;
+      margin-top: 10px;
+      padding: 9px 0;
+      border-radius: var(--radius-sm);
+      background: rgba(248, 113, 113, .1);
+      color: var(--red-400);
+      border: 1px solid rgba(248, 113, 113, .3);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .2s
+    }
+
+    #reset-btn:hover {
+      background: rgba(248, 113, 113, .2);
+      border-color: rgba(248, 113, 113, .55)
+    }
+
+    #reset-btn:active {
+      transform: scale(.98)
+    }
+
+    #reset-btn.visible {
+      display: block
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px
+    }
+
+    .kpi-item {
+      background: rgba(0, 0, 0, .2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 12px
+    }
+
+    .kpi-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--text-secondary);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 4px
+    }
+
+    .kpi-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1;
+      transition: color .4s
+    }
+
+    .kpi-value.applied {
+      color: var(--green-400)
+    }
+
+    .kpi-delta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      margin-top: 3px;
+      color: var(--text-secondary)
+    }
+
+    .kpi-delta.good {
+      color: var(--green-400)
+    }
+
+
+    .chart-wrap {
+      position: relative;
+      height: 220px
+    }
+
+    #chart-tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: #0a1220;
+      border: 1px solid rgba(34, 197, 94, .3);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-primary);
+      opacity: 0;
+      transition: opacity .18s;
+      z-index: 99999;
+      width: 240px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, .6);
+    }
+
+    #chart-tooltip.visible {
+      opacity: 1
+    }
+
+    #tt-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--green-400);
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(34, 197, 94, .2);
+      padding-bottom: 6px
+    }
+
+    .tt-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+      color: var(--text-secondary)
+    }
+
+    .tt-row span:last-child {
+      color: var(--text-primary)
+    }
+
+    #tt-desc {
+      margin-top: 8px;
+      font-size: 9.5px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      font-family: 'DM Sans', sans-serif;
+      border-top: 1px solid rgba(255, 255, 255, .06);
+      padding-top: 6px
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 14px;
+      margin-top: 8px
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--text-secondary)
+    }
+
+    .legend-item.green {
+      color: var(--green-400)
+    }
+
+    .legend-line {
+      width: 10px;
+      height: 2px;
+      border-radius: 2px;
+      display: inline-block
+    }
+
+    #result-log {
+      display: flex;
+      flex-direction: column
+    }
+
+    .log-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(5px);
+      animation: log-in .3s ease forwards
+    }
+
+    .log-line:last-child {
+      border-bottom: none
+    }
+
+    @keyframes log-in {
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .log-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-top: 3px;
+      flex-shrink: 0
+    }
+
+    .log-dot.green {
+      background: var(--green-500)
+    }
+
+    .log-dot.gray {
+      background: var(--text-secondary)
+    }
+
+    .log-dot.red {
+      background: var(--red-400)
+    }
+
+    #ghost {
+      position: fixed;
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--green-600), var(--green-400));
+      box-shadow: 0 8px 32px rgba(34, 197, 94, .55);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity .15s;
+      transform: translate(-50%, -50%) scale(1.1)
+    }
+
+    #ghost.active {
+      opacity: .92
+    }
+
+    #ghost.on-target {
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, .65), 0 8px 32px rgba(34, 197, 94, .6)
+    }
+
+    #module-card.applied {
+      border-color: rgba(34, 197, 94, .35);
+      background: linear-gradient(145deg, var(--bg-card), rgba(34, 197, 94, .03))
+    }
+
+    @keyframes grow-up {
+      from {
+        transform: scaleY(0);
+        transform-origin: 50% 100%
+      }
+
+      to {
+        transform: scaleY(1);
+        transform-origin: 50% 100%
+      }
+    }
+
+    @keyframes bloom-in {
+      from {
+        transform: scale(0) rotate(-20deg);
+        opacity: 0
+      }
+
+      to {
+        transform: scale(1) rotate(0deg);
+        opacity: 1
+      }
+    }
+
+    @keyframes leaf-pop {
+      from {
+        transform: scale(0);
+        opacity: 0
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1
+      }
+    }
+
+    @keyframes fade-out-plant {
+      from {
+        opacity: 1;
+        transform: translateY(0)
+      }
+
+      to {
+        opacity: 0;
+        transform: translateY(10px)
+      }
+    }
+
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 8, 16, .78);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid rgba(255, 255, 255, .1);
+      color: var(--text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s;
+      z-index: 5;
+      line-height: 1
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 255, 255, .14);
+      color: var(--text-primary)
+    }
+
+
+    .phone-frame {
+      width: 316px;
+      background: #0a0f1a;
+      border-radius: 40px;
+      border: 6px solid #1a2840;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, .75)
+    }
+
+    .phone-notch {
+      width: 100%;
+      height: 32px;
+      background: #060b12;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .phone-notch-pill {
+      width: 80px;
+      height: 14px;
+      background: #0d1521;
+      border-radius: 20px
+    }
+
+    .phone-screen {
+      background: #080d14;
+      max-height: 580px;
+      overflow-y: auto;
+      scrollbar-width: none
+    }
+
+    .phone-screen::-webkit-scrollbar {
+      display: none
+    }
+
+    .phone-home-bar {
+      width: 100%;
+      height: 28px;
+      background: #060b12;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .phone-home-pill {
+      width: 100px;
+      height: 5px;
+      background: #1e2d42;
+      border-radius: 10px
+    }
+
+    .app-header {
+      padding: 14px 18px 10px;
+      background: #0d1521;
+      border-bottom: 1px solid rgba(255, 255, 255, .06)
+    }
+
+    .app-logo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 3px
+    }
+
+    .app-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1d4ed8, #60a5fa);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0
+    }
+
+    .app-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 600
+    }
+
+    .app-sub {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--text-secondary);
+      letter-spacing: .06em
+    }
+
+
+    .phone-tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+      background: #0d1521
+    }
+
+    .phone-tab {
+      flex: 1;
+      padding: 9px 4px;
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color .2s, border-bottom .2s;
+      border-bottom: 2px solid transparent
+    }
+
+    .phone-tab.active {
+      color: var(--blue-400);
+      border-bottom-color: var(--blue-400)
+    }
+
+    .phone-tab-panel {
+      display: none
+    }
+
+    .phone-tab-panel.active {
+      display: block
+    }
+
+    .ph-section {
+      margin: 12px 14px 0
+    }
+
+    .ph-section-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 7px
+    }
+
+    .ph-card {
+      background: #0d1521;
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 10px;
+      padding: 11px
+    }
+
+    .ph-qr-row {
+      display: flex;
+      align-items: center;
+      gap: 11px
+    }
+
+    .ph-qr {
+      width: 46px;
+      height: 46px;
+      border-radius: 7px;
+      background: #111d2e;
+      border: 1px solid rgba(96, 165, 250, .2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0
+    }
+
+    .ph-module-id {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--blue-400)
+    }
+
+    .ph-module-name {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px
+    }
+
+    .ph-badge-row {
+      display: flex;
+      gap: 5px;
+      margin-top: 9px;
+      flex-wrap: wrap
+    }
+
+    .ph-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(96, 165, 250, .1);
+      color: var(--blue-400);
+      border: 1px solid rgba(96, 165, 250, .2)
+    }
+
+    .ph-badge.green {
+      background: rgba(34, 197, 94, .1);
+      color: var(--green-400);
+      border-color: rgba(34, 197, 94, .2)
+    }
+
+    .ph-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, .05)
+    }
+
+    .ph-row:last-child {
+      border-bottom: none
+    }
+
+    .ph-row-label {
+      font-size: 11px;
+      color: var(--text-secondary)
+    }
+
+    .ph-row-val {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-primary);
+      font-weight: 500
+    }
+
+    .ph-row-val.green {
+      color: var(--green-400)
+    }
+
+    .ph-row-val.amber {
+      color: var(--amber-400)
+    }
+
+    .ph-destino {
+      background: #0d1521;
+      border: 1px solid rgba(34, 197, 94, .28);
+      border-radius: 10px;
+      padding: 12px;
+      margin: 12px 14px 14px
+    }
+
+    .ph-progress-bar {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, .06);
+      border-radius: 3px;
+      margin-top: 7px;
+      overflow: hidden
+    }
+
+    .ph-progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--green-600), var(--green-400))
+    }
+
+
+    .co2-hero {
+      margin: 14px;
+      background: linear-gradient(135deg, rgba(34, 197, 94, .12), rgba(74, 222, 128, .06));
+      border: 1px solid rgba(34, 197, 94, .3);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center
+    }
+
+    .co2-big {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 36px;
+      font-weight: 600;
+      color: var(--green-400);
+      line-height: 1;
+      animation: count-up .8s ease forwards
+    }
+
+    .co2-unit {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 4px
+    }
+
+    .co2-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 6px
+    }
+
+    .co2-equiv {
+      margin: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .co2-equiv-card {
+      background: #0d1521;
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 9px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .co2-equiv-icon {
+      font-size: 20px;
+      flex-shrink: 0
+    }
+
+    .co2-equiv-text {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.4
+    }
+
+    .co2-equiv-val {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--green-400);
+      font-weight: 600
+    }
+
+    .co2-timeline {
+      margin: 12px 14px 14px
+    }
+
+    .co2-bar-row {
+      margin-bottom: 8px
+    }
+
+    .co2-bar-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px
+    }
+
+    .co2-bar-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--text-secondary)
+    }
+
+    .co2-bar-val {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--green-400)
+    }
+
+    .co2-bar-track {
+      height: 5px;
+      background: rgba(255, 255, 255, .06);
+      border-radius: 3px;
+      overflow: hidden
+    }
+
+    .co2-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--green-600), var(--green-400));
+      transition: width .6s ease
+    }
+
+    .co2-fleet-note {
+      margin: 0 14px 14px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      padding: 8px;
+      background: rgba(255, 255, 255, .03);
+      border-radius: 6px;
+      border: 1px solid var(--border)
+    }
+
+    @keyframes count-up {
+      from {
+        opacity: 0;
+        transform: translateY(10px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+
+    .pc-frame {
+      width: 800px;
+      background: #0a0f1a;
+      border-radius: 10px 10px 6px 6px;
+      border: 1px solid #1e2d42;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0, 0, 0, .75);
+      position: relative
+    }
+
+    .pc-titlebar {
+      height: 36px;
+      background: #060b12;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 7px;
+      border-bottom: 1px solid #1e2d42
+    }
+
+    .pc-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0
+    }
+
+    .pc-title {
+      flex: 1;
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      letter-spacing: .06em
+    }
+
+    .pc-screen {
+      background: #080d14;
+      padding: 18px;
+      max-height: 80vh;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent
+    }
+
+    .pc-grid3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px
+    }
+
+    .pc-stat {
+      background: #0d1521;
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 9px;
+      padding: 13px
+    }
+
+    .pc-stat-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 5px
+    }
+
+    .pc-stat-val {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 22px;
+      font-weight: 600
+    }
+
+    .pc-stat-val.green {
+      color: var(--green-400)
+    }
+
+    .pc-stat-val.blue {
+      color: var(--blue-400)
+    }
+
+    .pc-stat-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 3px
+    }
+
+    .pc-panel {
+      background: #0d1521;
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 9px;
+      padding: 13px;
+      margin-bottom: 12px
+    }
+
+    .pc-panel:last-child {
+      margin-bottom: 0
+    }
+
+    .pc-panel-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 11px
+    }
+
+    .pc-flow {
+      display: flex;
+      align-items: center
+    }
+
+    .pc-flow-step {
+      flex: 1;
+      background: #111d2e;
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 7px;
+      padding: 9px 7px;
+      text-align: center
+    }
+
+    .pc-flow-step-icon {
+      font-size: 18px;
+      margin-bottom: 4px
+    }
+
+    .pc-flow-step-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-secondary)
+    }
+
+    .pc-flow-step-sub {
+      font-size: 10px;
+      color: var(--text-secondary);
+      margin-top: 1px
+    }
+
+    .pc-flow-arrow {
+      padding: 0 5px;
+      color: rgba(255, 255, 255, .18);
+      font-size: 16px;
+      flex-shrink: 0
+    }
+
+    .pc-table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    .pc-table th {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      text-align: left;
+      padding: 0 10px 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, .07)
+    }
+
+    .pc-table td {
+      font-size: 11px;
+      color: var(--text-secondary);
+      padding: 7px 10px 7px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, .04)
+    }
+
+    .pc-table td:first-child {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--text-primary)
+    }
+
+    .pill {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block
+    }
+
+    .pill.green {
+      background: rgba(34, 197, 94, .1);
+      color: var(--green-400);
+      border: 1px solid rgba(34, 197, 94, .2)
+    }
+
+    .pill.amber {
+      background: rgba(251, 191, 36, .1);
+      color: var(--amber-400);
+      border: 1px solid rgba(251, 191, 36, .2)
+    }
+
+    .pill.blue {
+      background: rgba(96, 165, 250, .1);
+      color: var(--blue-400);
+      border: 1px solid rgba(96, 165, 250, .2)
+    }
+
+    .pc-bar-row {
+      margin-bottom: 9px
+    }
+
+    .pc-bar-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px
+    }
+
+    .pc-bar-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px
+    }
+
+    .pc-bar-track {
+      height: 6px;
+      background: rgba(255, 255, 255, .06);
+      border-radius: 3px;
+      overflow: hidden
+    }
+
+    .pc-bar-fill {
+      height: 100%;
+      border-radius: 3px
+    }
   </style>
 </head>
+
 <body>
 
-<div id="watermark">
-  <div class="wm-brand">✦ Dant'z ✦</div>
-  <div class="wm-sub">Grand Prix SENAI 2026 · feito com muito amor e carinho 🍀</div>
-</div>
 
-<div id="root">
-  <header id="topbar">
-    <div class="topbar-brand">
-      <span class="dot"></span>
-      CSM Simulação
-      <span style="color:var(--text-secondary);font-weight:400">/ Carenagem Sustentável</span>
-    </div>
-    <div class="topbar-meta">
-      <button class="tb-btn tb-btn-phone" onclick="openPhone()">Plataforma Cliente</button>
-      <button class="tb-btn tb-btn-pc" onclick="openPC()">IVECO</button>
-      <span class="topbar-tag" style="border-left:1px solid var(--border);padding-left:14px">Cabine · PP Monomaterial</span>
-      <span class="status-badge" id="status-badge">AGUARDANDO INTERAÇÃO</span>
-    </div>
-  </header>
+  <div id="watermark">
+    <div class="wm-brand">✦ Dant'z ✦</div>
+    <div class="wm-sub">Grand Prix SENAI 2026 · feito com muito amor e carinho 🍀</div>
+  </div>
 
-  <section id="viewer">
-    <canvas id="confetti-canvas"></canvas>
-    <div id="drop-overlay"></div>
-    <div id="hit-indicator">Cabine — FORA DE ALCANCE</div>
-    <div id="drop-hint">Solte sobre a cabine para aplicar</div>
-    <div id="target-label">Cabine PP</div>
-    <div id="plant-container">
-      <svg id="plant-svg" width="220" height="200" viewBox="0 0 220 200"></svg>
-    </div>
-  </section>
-
-  <div id="resize-handle"></div>
-
-  <aside id="sidebar">
-    <div class="card" id="module-card">
-      <div class="card-label">Módulo Sustentável — Arraste para o caminhão</div>
-      <div class="module-visual">
-        <div id="drag-chip" title="Arraste para a cabine do caminhão">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M21 3C15 3 10 8 10 8C5 13 4 19 4 21C9 21 13 18 17 15C21 11 21 3 21 3Z" fill="rgba(0,0,0,.45)" stroke="rgba(0,0,0,.3)" stroke-width="1.5" stroke-linejoin="round"/>
-            <path d="M4 21L10 15" stroke="rgba(0,0,0,.4)" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <span class="chip-label">PP</span>
-        </div>
-        <div>
-          <div class="module-name">Painel PP Monomaterial</div>
-          <div class="module-sub">Carenagem frontal · ~6 kg · 1,91 kg CO₂/kg</div>
-        </div>
+  <div id="root">
+    <header id="topbar">
+      <div class="topbar-brand">
+        <span class="dot"></span>
+        CSM Simulação
+        <span style="color:var(--text-secondary);font-weight:400">/ Carenagem Sustentável</span>
       </div>
-      <div class="module-tags">
-        <span class="tag tag-green">Snap-fit</span>
-        <span class="tag tag-green">Monomaterial</span>
-        <span class="tag tag-green">−50% CO₂</span>
-        <span class="tag tag-green">DfD</span>
-        <span class="tag tag-gray">ISO 14040</span>
-        <span class="tag tag-gray">Polipropileno</span>
-        <span class="tag tag-gray">QR-Passaporte</span>
+      <div class="topbar-meta">
+        <button class="tb-btn tb-btn-phone" onclick="openPhone()">Plataforma Cliente</button>
+        <button class="tb-btn tb-btn-pc" onclick="openPC()">IVECO</button>
+        <span class="topbar-tag" style="border-left:1px solid var(--border);padding-left:14px">Cabine · PP
+          Monomaterial</span>
+        <span class="status-badge" id="status-badge">AGUARDANDO INTERAÇÃO</span>
       </div>
-      <div class="instruction-row" id="instruction-row">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="flex-shrink:0">
-          <path d="M9 11V6.5C9 5.67 9.67 5 10.5 5S12 5.67 12 6.5V11M12 8.5C12 7.67 12.67 7 13.5 7S15 7.67 15 8.5V11M15 9.5C15 8.67 15.67 8 16.5 8S18 8.67 18 9.5V15C18 18.31 15.31 21 12 21H10.5C8.5 21 6.7 19.9 5.8 18.1L4.1 14.5C3.7 13.6 4.1 12.5 5 12C5.9 11.5 7 11.8 7.4 12.7L9 11" stroke="var(--green-400)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span class="instruction-text" id="instruction-text">Arraste o chip verde para a peça azul no caminhão</span>
-      </div>
-      <button id="reset-btn" onclick="resetSubstitution()">↩ Desvincular módulo PP — restaurar ABS original</button>
-    </div>
+    </header>
 
-    <div class="card">
-      <div class="card-label">Indicadores ESG — Antes / Depois</div>
-      <div class="kpi-grid">
-        <div class="kpi-item"><div class="kpi-label">Emissão CO₂/ciclo</div><div class="kpi-value" id="kpi-co2">12,4 kg</div><div class="kpi-delta" id="kpi-co2-d">ABS multipeça atual</div></div>
-        <div class="kpi-item"><div class="kpi-label">Reciclabilidade</div><div class="kpi-value" id="kpi-rec">38%</div><div class="kpi-delta" id="kpi-rec-d">Misto ABS/PA/PU</div></div>
-        <div class="kpi-item"><div class="kpi-label">Custo Desmontagem</div><div class="kpi-value" id="kpi-cost">R$ 320</div><div class="kpi-delta" id="kpi-cost-d">Parafusos + adesivos</div></div>
-        <div class="kpi-item"><div class="kpi-label">Índice de Reuso</div><div class="kpi-value" id="kpi-reuse">0,28</div><div class="kpi-delta" id="kpi-reuse-d">Ciclos médios / uni.</div></div>
-        <div class="kpi-item"><div class="kpi-label">Materiais distintos</div><div class="kpi-value" id="kpi-mat">6 tipos</div><div class="kpi-delta" id="kpi-mat-d">ABS·PA·PP·PU·Fe·Al</div></div>
-        <div class="kpi-item"><div class="kpi-label">Rastreabilidade</div><div class="kpi-value" id="kpi-trace" style="font-size:12px">Nenhuma</div><div class="kpi-delta" id="kpi-trace-d">Sem passaporte digital</div></div>
+    <section id="viewer">
+      <canvas id="confetti-canvas"></canvas>
+      <div id="drop-overlay"></div>
+      <div id="hit-indicator">Cabine — FORA DE ALCANCE</div>
+      <div id="drop-hint">Solte sobre a cabine para aplicar</div>
+      <div id="target-label">Cabine PP</div>
+      <div id="plant-container">
+        <svg id="plant-svg" width="220" height="200" viewBox="0 0 220 200"></svg>
       </div>
-    </div>
+    </section>
 
-    <div class="card">
-      <div class="card-label">Perfil ESG — Antes vs Depois (passe o mouse)</div>
-      <div class="chart-wrap">
-        <canvas id="chart"></canvas>
-      </div>
-      <div id="chart-tooltip">
-        <div id="tt-title"></div>
-        <div class="tt-row"><span>ABS Atual</span><span id="tt-before"></span></div>
-        <div class="tt-row"><span style="color:var(--green-400)">PP Monomaterial</span><span id="tt-after" style="color:var(--green-400)"></span></div>
-        <div class="tt-row"><span>Melhoria</span><span id="tt-delta" style="color:var(--green-400)"></span></div>
-        <div id="tt-desc"></div>
-      </div>
-      <div class="chart-legend">
-        <div class="legend-item"><span class="legend-line" style="background:#4a5568"></span>ABS ATUAL</div>
-        <div class="legend-item green"><span class="legend-line" style="background:var(--green-500)"></span>PP MONOMATERIAL</div>
-      </div>
-    </div>
+    <div id="resize-handle"></div>
 
-    <div class="card">
-      <div class="card-label">Log de Substituição</div>
-      <div id="result-log">
-        <div class="log-line" style="opacity:.45;transform:none"><span class="log-dot gray"></span><span>Nenhuma substituição aplicada.</span></div>
-      </div>
-    </div>
-  </aside>
-</div>
-
-<div id="ghost">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <path d="M21 3C15 3 10 8 10 8C5 13 4 19 4 21C9 21 13 18 17 15C21 11 21 3 21 3Z" fill="rgba(0,0,0,.45)" stroke="rgba(0,0,0,.3)" stroke-width="1.5" stroke-linejoin="round"/>
-    <path d="M4 21L10 15" stroke="rgba(0,0,0,.4)" stroke-width="1.5" stroke-linecap="round"/>
-  </svg>
-  <span style="font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;color:rgba(0,0,0,.7);letter-spacing:.08em;margin-top:2px">PP-R30</span>
-</div>
-
-<div class="modal-overlay" id="phone-modal" onclick="closeModal('phone-modal')">
-  <div class="phone-frame" onclick="event.stopPropagation()">
-    <div class="phone-notch"><div class="phone-notch-pill"></div></div>
-    <div class="phone-screen">
-      <div class="app-header">
-        <div class="app-logo-row">
-          <div class="app-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="white" opacity=".9"/></svg>
+    <aside id="sidebar">
+      <div class="card" id="module-card">
+        <div class="card-label">Módulo Sustentável — Arraste para o caminhão</div>
+        <div class="module-visual">
+          <div id="drag-chip" title="Arraste para a cabine do caminhão">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M21 3C15 3 10 8 10 8C5 13 4 19 4 21C9 21 13 18 17 15C21 11 21 3 21 3Z" fill="rgba(0,0,0,.45)"
+                stroke="rgba(0,0,0,.3)" stroke-width="1.5" stroke-linejoin="round" />
+              <path d="M4 21L10 15" stroke="rgba(0,0,0,.4)" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            <span class="chip-label">PP</span>
           </div>
           <div>
-            <div class="app-title">nome provisório xdd</div>
-            <div class="app-sub">PLATAFORMA DIGITAL · CLIENTE</div>
+            <div class="module-name">Painel PP Monomaterial</div>
+            <div class="module-sub">Carenagem frontal · ~6 kg · 1,91 kg CO₂/kg</div>
+          </div>
+        </div>
+        <div class="module-tags">
+          <span class="tag tag-green">Snap-fit</span>
+          <span class="tag tag-green">Monomaterial</span>
+          <span class="tag tag-green">−50% CO₂</span>
+          <span class="tag tag-green">DfD</span>
+          <span class="tag tag-gray">ISO 14040</span>
+          <span class="tag tag-gray">Polipropileno</span>
+          <span class="tag tag-gray">QR-Passaporte</span>
+        </div>
+        <div class="instruction-row" id="instruction-row">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="flex-shrink:0">
+            <path
+              d="M9 11V6.5C9 5.67 9.67 5 10.5 5S12 5.67 12 6.5V11M12 8.5C12 7.67 12.67 7 13.5 7S15 7.67 15 8.5V11M15 9.5C15 8.67 15.67 8 16.5 8S18 8.67 18 9.5V15C18 18.31 15.31 21 12 21H10.5C8.5 21 6.7 19.9 5.8 18.1L4.1 14.5C3.7 13.6 4.1 12.5 5 12C5.9 11.5 7 11.8 7.4 12.7L9 11"
+              stroke="var(--green-400)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span class="instruction-text" id="instruction-text">Arraste o chip verde para a peça azul no caminhão</span>
+        </div>
+        <button id="reset-btn" onclick="resetSubstitution()">↩ Desvincular módulo PP — restaurar ABS original</button>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Indicadores ESG — Antes / Depois</div>
+        <div class="kpi-grid">
+          <div class="kpi-item">
+            <div class="kpi-label">Emissão CO₂/ciclo</div>
+            <div class="kpi-value" id="kpi-co2">12,4 kg</div>
+            <div class="kpi-delta" id="kpi-co2-d">ABS multipeça atual</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Reciclabilidade</div>
+            <div class="kpi-value" id="kpi-rec">38%</div>
+            <div class="kpi-delta" id="kpi-rec-d">Misto ABS/PA/PU</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Custo Desmontagem</div>
+            <div class="kpi-value" id="kpi-cost">R$ 320</div>
+            <div class="kpi-delta" id="kpi-cost-d">Parafusos + adesivos</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Índice de Reuso</div>
+            <div class="kpi-value" id="kpi-reuse">0,28</div>
+            <div class="kpi-delta" id="kpi-reuse-d">Ciclos médios / uni.</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Materiais distintos</div>
+            <div class="kpi-value" id="kpi-mat">6 tipos</div>
+            <div class="kpi-delta" id="kpi-mat-d">ABS·PA·PP·PU·Fe·Al</div>
+          </div>
+          <div class="kpi-item">
+            <div class="kpi-label">Rastreabilidade</div>
+            <div class="kpi-value" id="kpi-trace" style="font-size:12px">Nenhuma</div>
+            <div class="kpi-delta" id="kpi-trace-d">Sem passaporte digital</div>
           </div>
         </div>
       </div>
 
-      <div class="phone-tabs">
-        <div class="phone-tab active" onclick="switchTab('tab-passaporte')">Passaporte</div>
-        <div class="phone-tab" onclick="switchTab('tab-material')">Material</div>
-        <div class="phone-tab" onclick="switchTab('tab-co2')">CO₂ 24h</div>
+      <div class="card">
+        <div class="card-label">Perfil ESG — Antes vs Depois (passe o mouse)</div>
+        <div class="chart-wrap">
+          <canvas id="chart"></canvas>
+        </div>
+        <div id="chart-tooltip">
+          <div id="tt-title"></div>
+          <div class="tt-row"><span>ABS Atual</span><span id="tt-before"></span></div>
+          <div class="tt-row"><span style="color:var(--green-400)">PP Monomaterial</span><span id="tt-after"
+              style="color:var(--green-400)"></span></div>
+          <div class="tt-row"><span>Melhoria</span><span id="tt-delta" style="color:var(--green-400)"></span></div>
+          <div id="tt-desc"></div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-line" style="background:#4a5568"></span>ABS ATUAL</div>
+          <div class="legend-item green"><span class="legend-line" style="background:var(--green-500)"></span>PP
+            MONOMATERIAL</div>
+        </div>
       </div>
 
-      <div class="phone-tab-panel active" id="tab-passaporte">
-        <div class="ph-section">
-          <div class="ph-section-title">Identificação do Módulo</div>
-          <div class="ph-card">
-            <div class="ph-qr-row">
-              <div class="ph-qr">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                  <rect x="2" y="2" width="12" height="12" rx="1" fill="none" stroke="#60a5fa" stroke-width="1.5"/><rect x="5" y="5" width="6" height="6" fill="#60a5fa"/>
-                  <rect x="18" y="2" width="12" height="12" rx="1" fill="none" stroke="#60a5fa" stroke-width="1.5"/><rect x="21" y="5" width="6" height="6" fill="#60a5fa"/>
-                  <rect x="2" y="18" width="12" height="12" rx="1" fill="none" stroke="#60a5fa" stroke-width="1.5"/><rect x="5" y="21" width="6" height="6" fill="#60a5fa"/>
-                  <rect x="18" y="18" width="4" height="4" fill="#60a5fa"/><rect x="24" y="18" width="4" height="4" fill="#60a5fa"/>
-                  <rect x="18" y="24" width="4" height="4" fill="#60a5fa"/><rect x="24" y="24" width="4" height="4" fill="#60a5fa"/>
-                </svg>
+      <div class="card">
+        <div class="card-label">Log de Substituição</div>
+        <div id="result-log">
+          <div class="log-line" style="opacity:.45;transform:none"><span class="log-dot gray"></span><span>Nenhuma
+              substituição aplicada.</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="ghost">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M21 3C15 3 10 8 10 8C5 13 4 19 4 21C9 21 13 18 17 15C21 11 21 3 21 3Z" fill="rgba(0,0,0,.45)"
+        stroke="rgba(0,0,0,.3)" stroke-width="1.5" stroke-linejoin="round" />
+      <path d="M4 21L10 15" stroke="rgba(0,0,0,.4)" stroke-width="1.5" stroke-linecap="round" />
+    </svg>
+    <span
+      style="font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:600;color:rgba(0,0,0,.7);letter-spacing:.08em;margin-top:2px">PP-R30</span>
+  </div>
+
+
+  <div class="modal-overlay" id="phone-modal" onclick="closeModal('phone-modal')">
+    <div class="phone-frame" onclick="event.stopPropagation()">
+      <div class="phone-notch">
+        <div class="phone-notch-pill"></div>
+      </div>
+      <div class="phone-screen">
+        <div class="app-header">
+          <div class="app-logo-row">
+            <div class="app-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"
+                  fill="white" opacity=".9" />
+              </svg>
+            </div>
+            <div>
+              <div class="app-title">nome provisório xdd</div>
+              <div class="app-sub">PLATAFORMA DIGITAL · CLIENTE</div>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="phone-tabs">
+          <div class="phone-tab active" onclick="switchTab('tab-passaporte')">Passaporte</div>
+          <div class="phone-tab" onclick="switchTab('tab-material')">Material</div>
+          <div class="phone-tab" onclick="switchTab('tab-co2')">CO₂ 24h</div>
+        </div>
+
+
+        <div class="phone-tab-panel active" id="tab-passaporte">
+          <div class="ph-section">
+            <div class="ph-section-title">Identificação do Módulo</div>
+            <div class="ph-card">
+              <div class="ph-qr-row">
+                <div class="ph-qr">
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <rect x="2" y="2" width="12" height="12" rx="1" fill="none" stroke="#60a5fa" stroke-width="1.5" />
+                    <rect x="5" y="5" width="6" height="6" fill="#60a5fa" />
+                    <rect x="18" y="2" width="12" height="12" rx="1" fill="none" stroke="#60a5fa" stroke-width="1.5" />
+                    <rect x="21" y="5" width="6" height="6" fill="#60a5fa" />
+                    <rect x="2" y="18" width="12" height="12" rx="1" fill="none" stroke="#60a5fa" stroke-width="1.5" />
+                    <rect x="5" y="21" width="6" height="6" fill="#60a5fa" />
+                    <rect x="18" y="18" width="4" height="4" fill="#60a5fa" />
+                    <rect x="24" y="18" width="4" height="4" fill="#60a5fa" />
+                    <rect x="18" y="24" width="4" height="4" fill="#60a5fa" />
+                    <rect x="24" y="24" width="4" height="4" fill="#60a5fa" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="ph-module-id">MOD-27-PP-2024</div>
+                  <div class="ph-module-name">Carenagem Frontal · PP Monomat.</div>
+                </div>
               </div>
+              <div class="ph-badge-row">
+                <span class="ph-badge green">Ativo</span>
+                <span class="ph-badge">ISO 14040</span>
+                <span class="ph-badge">Frota #A-082</span>
+                <span class="ph-badge">ID único</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ph-section">
+            <div class="ph-section-title">Tempo de Uso e Histórico</div>
+            <div class="ph-card">
+              <div class="ph-row"><span class="ph-row-label">Instalado em</span><span class="ph-row-val">Mar 2024</span>
+              </div>
+              <div class="ph-row"><span class="ph-row-label">Km rodados</span><span class="ph-row-val amber">87.400
+                  km</span></div>
+              <div class="ph-row"><span class="ph-row-label">Última inspeção</span><span class="ph-row-val">Jan
+                  2025</span></div>
+              <div class="ph-row"><span class="ph-row-label">Condição atual</span><span
+                  class="ph-row-val green">Boa</span></div>
+              <div class="ph-row"><span class="ph-row-label">Ocorrências</span><span class="ph-row-val">0 reparos</span>
+              </div>
+              <div
+                style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary)">
+                Vida útil estimada</div>
+              <div class="ph-progress-bar">
+                <div class="ph-progress-fill" style="width:64%"></div>
+              </div>
+              <div
+                style="display:flex;justify-content:space-between;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary)">
+                <span>0 km</span><span style="color:var(--amber-400)">64% utilizado</span><span>~135k km</span></div>
+            </div>
+          </div>
+
+          <div class="ph-destino">
+            <div
+              style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px">
+              Destino recomendado</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--green-400)">♻
+              Remanufatura</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;line-height:1.5">Condição permite
+              limpeza + reuso após inspeção técnica. Agende coleta na logística reversa IVECO.</div>
+          </div>
+
+          <div class="ph-section" style="margin-bottom:14px">
+            <div class="ph-section-title">Integração IVECO</div>
+            <div class="ph-card">
+              <div class="ph-row"><span class="ph-row-label">Monitoramento fluxo</span><span
+                  class="ph-row-val green">Ativo</span></div>
+              <div class="ph-row"><span class="ph-row-label">Último sync</span><span class="ph-row-val">Há 2
+                  horas</span></div>
+              <div class="ph-row"><span class="ph-row-label">Coleta agendada</span><span class="ph-row-val amber">15 Fev
+                  2025</span></div>
+              <div class="ph-row"><span class="ph-row-label">Passaporte digital</span><span
+                  class="ph-row-val green">Ativo · completo</span></div>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="phone-tab-panel" id="tab-material">
+          <div class="ph-section">
+            <div class="ph-section-title">Registro de Material</div>
+            <div class="ph-card">
+              <div class="ph-row"><span class="ph-row-label">Material</span><span class="ph-row-val">Polipropileno
+                  (PP)</span></div>
+              <div class="ph-row"><span class="ph-row-label">Composição</span><span class="ph-row-val">PP pigmentado
+                  monomat.</span></div>
+              <div class="ph-row"><span class="ph-row-label">Fixação</span><span class="ph-row-val green">Snap-fit + 4
+                  parafusos</span></div>
+              <div class="ph-row"><span class="ph-row-label">Reciclabilidade</span><span
+                  class="ph-row-val green">94%</span></div>
+              <div class="ph-row"><span class="ph-row-label">CO₂ / ciclo</span><span class="ph-row-val green">6,2
+                  kg</span></div>
+              <div class="ph-row"><span class="ph-row-label">CO₂ vs. ABS</span><span class="ph-row-val green">−50%
+                  emissões</span></div>
+              <div class="ph-row"><span class="ph-row-label">Peso peça</span><span class="ph-row-val">~6 kg</span></div>
+              <div class="ph-row"><span class="ph-row-label">Fator emissão PP</span><span class="ph-row-val">1,91 kg
+                  CO₂/kg</span></div>
+              <div class="ph-row"><span class="ph-row-label">Fator emissão ABS</span><span class="ph-row-val amber">3,10
+                  kg CO₂/kg</span></div>
+              <div class="ph-row"><span class="ph-row-label">Norma LCA</span><span class="ph-row-val">ISO
+                  14040/14044</span></div>
+            </div>
+          </div>
+          <div class="ph-section" style="margin-bottom:14px">
+            <div class="ph-section-title">Vantagem Circular</div>
+            <div class="ph-card">
+              <div class="ph-row"><span class="ph-row-label">Desmontagem</span><span class="ph-row-val green">Sem
+                  adesivos</span></div>
+              <div class="ph-row"><span class="ph-row-label">Interfaces</span><span class="ph-row-val">Snap-fit
+                  padronizado</span></div>
+              <div class="ph-row"><span class="ph-row-label">Materiais distintos</span><span class="ph-row-val green">1
+                  (PP)</span></div>
+              <div class="ph-row"><span class="ph-row-label">Design for Disassembly</span><span
+                  class="ph-row-val green">Sim</span></div>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="phone-tab-panel" id="tab-co2">
+          <div class="co2-hero">
+            <div class="co2-big" id="co2-hero-val">6,2</div>
+            <div class="co2-unit">kg CO₂ economizados nas últimas 24h</div>
+            <div class="co2-label">Frota #A-082 · 1 módulo PP ativo</div>
+          </div>
+
+          <div class="co2-equiv">
+            <div class="ph-section-title" style="margin:0 0 6px">Equivalências</div>
+            <div class="co2-equiv-card">
+              <div class="co2-equiv-icon">🚗</div>
               <div>
-                <div class="ph-module-id">MOD-27-PP-2024</div>
-                <div class="ph-module-name">Carenagem Frontal · PP Monomat.</div>
+                <div class="co2-equiv-val">~28 km</div>
+                <div class="co2-equiv-text">evitados em um carro a gasolina (220 g CO₂/km)</div>
               </div>
             </div>
-            <div class="ph-badge-row">
-              <span class="ph-badge green">Ativo</span>
-              <span class="ph-badge">ISO 14040</span>
-              <span class="ph-badge">Frota #A-082</span>
-              <span class="ph-badge">ID único</span>
+            <div class="co2-equiv-card">
+              <div class="co2-equiv-icon">🌳</div>
+              <div>
+                <div class="co2-equiv-val">0,84 dia</div>
+                <div class="co2-equiv-text">de absorção de 1 árvore adulta (~7,4 kg CO₂/ano)</div>
+              </div>
+            </div>
+            <div class="co2-equiv-card">
+              <div class="co2-equiv-icon">💡</div>
+              <div>
+                <div class="co2-equiv-val">~18 kWh</div>
+                <div class="co2-equiv-text">equivalentes na geração elétrica brasileira (0,34 kg CO₂/kWh)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="co2-timeline">
+            <div class="ph-section-title" style="margin:0 0 10px">Economia acumulada — Últimas 24h</div>
+            <div class="co2-bar-row">
+              <div class="co2-bar-head"><span class="co2-bar-label">00h–06h</span><span class="co2-bar-val">1,5
+                  kg</span></div>
+              <div class="co2-bar-track">
+                <div class="co2-bar-fill" style="width:24%"></div>
+              </div>
+            </div>
+            <div class="co2-bar-row">
+              <div class="co2-bar-head"><span class="co2-bar-label">06h–12h</span><span class="co2-bar-val">1,8
+                  kg</span></div>
+              <div class="co2-bar-track">
+                <div class="co2-bar-fill" style="width:29%"></div>
+              </div>
+            </div>
+            <div class="co2-bar-row">
+              <div class="co2-bar-head"><span class="co2-bar-label">12h–18h</span><span class="co2-bar-val">1,6
+                  kg</span></div>
+              <div class="co2-bar-track">
+                <div class="co2-bar-fill" style="width:26%"></div>
+              </div>
+            </div>
+            <div class="co2-bar-row">
+              <div class="co2-bar-head"><span class="co2-bar-label">18h–24h</span><span class="co2-bar-val">1,3
+                  kg</span></div>
+              <div class="co2-bar-track">
+                <div class="co2-bar-fill" style="width:21%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="co2-fleet-note">
+            Baseado em 1 ciclo de produção/reintegração por dia (ABS: 3,10 kg CO₂/kg · PP: 1,91 kg CO₂/kg · peça ~6 kg).
+            Fonte: PlasticsEurope / ETC-WMGE 2021. A diferença de 6,2 kg CO₂ equivale à economia por módulo PP vs. ABS
+            virgem ao longo do ciclo de fabricação e fim de vida.
+          </div>
+          <div style="margin:0 14px 14px">
+            <div class="ph-section-title" style="margin-bottom:8px">Projeção da frota</div>
+            <div class="ph-card">
+              <div class="ph-row"><span class="ph-row-label">Módulos PP ativos (frota)</span><span
+                  class="ph-row-val green">247</span></div>
+              <div class="ph-row"><span class="ph-row-label">CO₂ evitado/dia (frota)</span><span
+                  class="ph-row-val green">1.531 kg</span></div>
+              <div class="ph-row"><span class="ph-row-label">CO₂ evitado/mês (est.)</span><span
+                  class="ph-row-val green">45,9 t</span></div>
+              <div class="ph-row"><span class="ph-row-label">Vs. frota ABS equivalente</span><span
+                  class="ph-row-val amber">−50,3%</span></div>
             </div>
           </div>
         </div>
 
-        <div class="ph-section">
-          <div class="ph-section-title">Tempo de Uso e Histórico</div>
-          <div class="ph-card">
-            <div class="ph-row"><span class="ph-row-label">Instalado em</span><span class="ph-row-val">Mar 2024</span></div>
-            <div class="ph-row"><span class="ph-row-label">Km rodados</span><span class="ph-row-val amber">87.400 km</span></div>
-            <div class="ph-row"><span class="ph-row-label">Última inspeção</span><span class="ph-row-val">Jan 2025</span></div>
-            <div class="ph-row"><span class="ph-row-label">Condição atual</span><span class="ph-row-val green">Boa</span></div>
-            <div class="ph-row"><span class="ph-row-label">Ocorrências</span><span class="ph-row-val">0 reparos</span></div>
-            <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary)">Vida útil estimada</div>
-            <div class="ph-progress-bar"><div class="ph-progress-fill" style="width:64%"></div></div>
-            <div style="display:flex;justify-content:space-between;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary)"><span>0 km</span><span style="color:var(--amber-400)">64% utilizado</span><span>~135k km</span></div>
-          </div>
-        </div>
-
-        <div class="ph-destino">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px">Destino recomendado</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--green-400)">♻ Remanufatura</div>
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;line-height:1.5">Condição permite limpeza + reuso após inspeção técnica. Agende coleta na logística reversa IVECO.</div>
-        </div>
-
-        <div class="ph-section" style="margin-bottom:14px">
-          <div class="ph-section-title">Integração IVECO</div>
-          <div class="ph-card">
-            <div class="ph-row"><span class="ph-row-label">Monitoramento fluxo</span><span class="ph-row-val green">Ativo</span></div>
-            <div class="ph-row"><span class="ph-row-label">Último sync</span><span class="ph-row-val">Há 2 horas</span></div>
-            <div class="ph-row"><span class="ph-row-label">Coleta agendada</span><span class="ph-row-val amber">15 Fev 2025</span></div>
-            <div class="ph-row"><span class="ph-row-label">Passaporte digital</span><span class="ph-row-val green">Ativo · completo</span></div>
-          </div>
-        </div>
       </div>
-
-      <div class="phone-tab-panel" id="tab-material">
-        <div class="ph-section">
-          <div class="ph-section-title">Registro de Material</div>
-          <div class="ph-card">
-            <div class="ph-row"><span class="ph-row-label">Material</span><span class="ph-row-val">Polipropileno (PP)</span></div>
-            <div class="ph-row"><span class="ph-row-label">Composição</span><span class="ph-row-val">PP pigmentado monomat.</span></div>
-            <div class="ph-row"><span class="ph-row-label">Fixação</span><span class="ph-row-val green">Snap-fit + 4 parafusos</span></div>
-            <div class="ph-row"><span class="ph-row-label">Reciclabilidade</span><span class="ph-row-val green">94%</span></div>
-            <div class="ph-row"><span class="ph-row-label">CO₂ / ciclo</span><span class="ph-row-val green">6,2 kg</span></div>
-            <div class="ph-row"><span class="ph-row-label">CO₂ vs. ABS</span><span class="ph-row-val green">−50% emissões</span></div>
-            <div class="ph-row"><span class="ph-row-label">Peso peça</span><span class="ph-row-val">~6 kg</span></div>
-            <div class="ph-row"><span class="ph-row-label">Fator emissão PP</span><span class="ph-row-val">1,91 kg CO₂/kg</span></div>
-            <div class="ph-row"><span class="ph-row-label">Fator emissão ABS</span><span class="ph-row-val amber">3,10 kg CO₂/kg</span></div>
-            <div class="ph-row"><span class="ph-row-label">Norma LCA</span><span class="ph-row-val">ISO 14040/14044</span></div>
-          </div>
-        </div>
-        <div class="ph-section" style="margin-bottom:14px">
-          <div class="ph-section-title">Vantagem Circular</div>
-          <div class="ph-card">
-            <div class="ph-row"><span class="ph-row-label">Desmontagem</span><span class="ph-row-val green">Sem adesivos</span></div>
-            <div class="ph-row"><span class="ph-row-label">Interfaces</span><span class="ph-row-val">Snap-fit padronizado</span></div>
-            <div class="ph-row"><span class="ph-row-label">Materiais distintos</span><span class="ph-row-val green">1 (PP)</span></div>
-            <div class="ph-row"><span class="ph-row-label">Design for Disassembly</span><span class="ph-row-val green">Sim</span></div>
-          </div>
-        </div>
+      <div class="phone-home-bar">
+        <div class="phone-home-pill"></div>
       </div>
-
-      <div class="phone-tab-panel" id="tab-co2">
-        <div class="co2-hero">
-          <div class="co2-big" id="co2-hero-val">6,2</div>
-          <div class="co2-unit">kg CO₂ economizados nas últimas 24h</div>
-          <div class="co2-label">Frota #A-082 · 1 módulo PP ativo</div>
-        </div>
-
-        <div class="co2-equiv">
-          <div class="ph-section-title" style="margin:0 0 6px">Equivalências</div>
-          <div class="co2-equiv-card">
-            <div class="co2-equiv-icon">🚗</div>
-            <div>
-              <div class="co2-equiv-val">~28 km</div>
-              <div class="co2-equiv-text">evitados em um carro a gasolina (220 g CO₂/km)</div>
-            </div>
-          </div>
-          <div class="co2-equiv-card">
-            <div class="co2-equiv-icon">🌳</div>
-            <div>
-              <div class="co2-equiv-val">0,84 dia</div>
-              <div class="co2-equiv-text">de absorção de 1 árvore adulta (~7,4 kg CO₂/ano)</div>
-            </div>
-          </div>
-          <div class="co2-equiv-card">
-            <div class="co2-equiv-icon">💡</div>
-            <div>
-              <div class="co2-equiv-val">~18 kWh</div>
-              <div class="co2-equiv-text">equivalentes na geração elétrica brasileira (0,34 kg CO₂/kWh)</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="co2-timeline">
-          <div class="ph-section-title" style="margin:0 0 10px">Economia acumulada — Últimas 24h</div>
-          <div class="co2-bar-row">
-            <div class="co2-bar-head"><span class="co2-bar-label">00h–06h</span><span class="co2-bar-val">1,5 kg</span></div>
-            <div class="co2-bar-track"><div class="co2-bar-fill" style="width:24%"></div></div>
-          </div>
-          <div class="co2-bar-row">
-            <div class="co2-bar-head"><span class="co2-bar-label">06h–12h</span><span class="co2-bar-val">1,8 kg</span></div>
-            <div class="co2-bar-track"><div class="co2-bar-fill" style="width:29%"></div></div>
-          </div>
-          <div class="co2-bar-row">
-            <div class="co2-bar-head"><span class="co2-bar-label">12h–18h</span><span class="co2-bar-val">1,6 kg</span></div>
-            <div class="co2-bar-track"><div class="co2-bar-fill" style="width:26%"></div></div>
-          </div>
-          <div class="co2-bar-row">
-            <div class="co2-bar-head"><span class="co2-bar-label">18h–24h</span><span class="co2-bar-val">1,3 kg</span></div>
-            <div class="co2-bar-track"><div class="co2-bar-fill" style="width:21%"></div></div>
-          </div>
-        </div>
-
-        <div class="co2-fleet-note">
-          Baseado em 1 ciclo de produção/reintegração por dia (ABS: 3,10 kg CO₂/kg · PP: 1,91 kg CO₂/kg · peça ~6 kg). Fonte: PlasticsEurope / ETC-WMGE 2021. A diferença de 6,2 kg CO₂ equivale à economia por módulo PP vs. ABS virgem ao longo do ciclo de fabricação e fim de vida.
-        </div>
-        <div style="margin:0 14px 14px">
-          <div class="ph-section-title" style="margin-bottom:8px">Projeção da frota</div>
-          <div class="ph-card">
-            <div class="ph-row"><span class="ph-row-label">Módulos PP ativos (frota)</span><span class="ph-row-val green">247</span></div>
-            <div class="ph-row"><span class="ph-row-label">CO₂ evitado/dia (frota)</span><span class="ph-row-val green">1.531 kg</span></div>
-            <div class="ph-row"><span class="ph-row-label">CO₂ evitado/mês (est.)</span><span class="ph-row-val green">45,9 t</span></div>
-            <div class="ph-row"><span class="ph-row-label">Vs. frota ABS equivalente</span><span class="ph-row-val amber">−50,3%</span></div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-    <div class="phone-home-bar"><div class="phone-home-pill"></div></div>
-    <button class="modal-close" onclick="closeModal('phone-modal')">✕</button>
-  </div>
-</div>
-
-<div class="modal-overlay" id="pc-modal" onclick="closeModal('pc-modal')">
-  <div class="pc-frame" onclick="event.stopPropagation()">
-    <div class="pc-titlebar">
-      <button class="pc-dot" style="background:#f87171" onclick="closeModal('pc-modal')"></button>
-      <div class="pc-dot" style="background:#fbbf24;cursor:default"></div>
-      <div class="pc-dot" style="background:#4ade80;cursor:default"></div>
-      <div class="pc-title">IVECO — Sistema de Logística Reversa · Painel de Triagem e Circularidade</div>
-    </div>
-    <div class="pc-screen">
-      <div class="pc-grid3">
-        <div class="pc-stat"><div class="pc-stat-label">Coletados este mês</div><div class="pc-stat-val blue">1.248</div><div class="pc-stat-sub">módulos recebidos</div></div>
-        <div class="pc-stat"><div class="pc-stat-label">Taxa reuso direto</div><div class="pc-stat-val green">61%</div><div class="pc-stat-sub">sem reprocessamento</div></div>
-        <div class="pc-stat"><div class="pc-stat-label">CO₂ evitado (acum.)</div><div class="pc-stat-val green">7,7 t</div><div class="pc-stat-sub">vs. matéria-prima virgem</div></div>
-      </div>
-
-      <div class="pc-panel">
-        <div class="pc-panel-title">Fluxo de Classificação — Coleta → Triagem → Destino</div>
-        <div class="pc-flow">
-          <div class="pc-flow-step"><div class="pc-flow-step-icon" style="color:var(--blue-400)">📦</div><div class="pc-flow-step-label">Coleta</div><div class="pc-flow-step-sub">Direto do cliente</div></div>
-          <div class="pc-flow-arrow">›</div>
-          <div class="pc-flow-step"><div class="pc-flow-step-icon" style="color:var(--amber-400)">🔍</div><div class="pc-flow-step-label">Triagem</div><div class="pc-flow-step-sub">Tempo · Condição</div></div>
-          <div class="pc-flow-arrow">›</div>
-          <div class="pc-flow-step" style="border-color:rgba(34,197,94,.3)"><div class="pc-flow-step-icon" style="color:var(--green-400)">♻</div><div class="pc-flow-step-label">Reuso Direto</div><div class="pc-flow-step-sub">&lt;80k km · Boa</div></div>
-          <div class="pc-flow-arrow">›</div>
-          <div class="pc-flow-step" style="border-color:rgba(251,191,36,.25)"><div class="pc-flow-step-icon" style="color:var(--amber-400)">🔧</div><div class="pc-flow-step-label">Remanufatura</div><div class="pc-flow-step-sub">80–150k km</div></div>
-          <div class="pc-flow-arrow">›</div>
-          <div class="pc-flow-step" style="border-color:rgba(96,165,250,.25)"><div class="pc-flow-step-icon" style="color:var(--blue-400)">🏭</div><div class="pc-flow-step-label">Reciclagem PP</div><div class="pc-flow-step-sub">&gt;150k km</div></div>
-        </div>
-      </div>
-
-      <div class="pc-panel">
-        <div class="pc-panel-title">Lotes em Processamento — Últimas 48h</div>
-        <table class="pc-table">
-          <thead><tr><th>ID Módulo</th><th>Frota</th><th>Km</th><th>Condição</th><th>Destino</th><th>Valor Recuperado</th></tr></thead>
-          <tbody>
-            <tr><td>MOD-27-PP-0091</td><td>A-017</td><td>68.200</td><td>Excelente</td><td><span class="pill green">Reuso Direto</span></td><td style="color:var(--green-400);font-family:'IBM Plex Mono',monospace">R$ 180</td></tr>
-            <tr><td>MOD-27-PP-0114</td><td>B-044</td><td>112.500</td><td>Regular</td><td><span class="pill amber">Remanufatura</span></td><td style="color:var(--amber-400);font-family:'IBM Plex Mono',monospace">R$ 95</td></tr>
-            <tr><td>MOD-27-PP-0082</td><td>A-082</td><td>87.400</td><td>Boa</td><td><span class="pill amber">Remanufatura</span></td><td style="color:var(--amber-400);font-family:'IBM Plex Mono',monospace">R$ 110</td></tr>
-            <tr><td>MOD-27-PP-0203</td><td>C-009</td><td>162.000</td><td>Desgastado</td><td><span class="pill blue">Reciclagem PP</span></td><td style="color:var(--blue-400);font-family:'IBM Plex Mono',monospace">R$ 32</td></tr>
-            <tr><td>MOD-27-PP-0178</td><td>A-031</td><td>44.300</td><td>Excelente</td><td><span class="pill green">Reuso Direto</span></td><td style="color:var(--green-400);font-family:'IBM Plex Mono',monospace">R$ 180</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="pc-panel">
-          <div class="pc-panel-title">Distribuição de Destinos — Mês Atual</div>
-          <div class="pc-bar-row"><div class="pc-bar-header"><span class="pc-bar-label" style="color:var(--green-400)">Reuso Direto</span><span class="pc-bar-label" style="color:var(--green-400)">61%</span></div><div class="pc-bar-track"><div class="pc-bar-fill" style="width:61%;background:var(--green-500)"></div></div></div>
-          <div class="pc-bar-row"><div class="pc-bar-header"><span class="pc-bar-label" style="color:var(--amber-400)">Remanufatura</span><span class="pc-bar-label" style="color:var(--amber-400)">27%</span></div><div class="pc-bar-track"><div class="pc-bar-fill" style="width:27%;background:var(--amber-400)"></div></div></div>
-          <div class="pc-bar-row"><div class="pc-bar-header"><span class="pc-bar-label" style="color:var(--blue-400)">Reciclagem PP</span><span class="pc-bar-label" style="color:var(--blue-400)">12%</span></div><div class="pc-bar-track"><div class="pc-bar-fill" style="width:12%;background:var(--blue-400)"></div></div></div>
-          <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary)">88% dos módulos retornam ao ciclo produtivo sem aterro.</div>
-        </div>
-        <div class="pc-panel">
-          <div class="pc-panel-title">Valor Circular Gerado — Ativo Produtivo</div>
-          <div class="ph-row"><span class="ph-row-label">Matéria-prima virgem evitada</span><span class="ph-row-val green">2,3 t</span></div>
-          <div class="ph-row"><span class="ph-row-label">Custo médio por módulo</span><span class="ph-row-val green">R$ 140</span></div>
-          <div class="ph-row"><span class="ph-row-label">Economia vs. ABS novo</span><span class="ph-row-val green">−56%</span></div>
-          <div class="ph-row"><span class="ph-row-label">Retorno ao ciclo (mês)</span><span class="ph-row-val amber">R$ 148 k</span></div>
-          <div class="ph-row"><span class="ph-row-label">Índice circularidade</span><span class="ph-row-val green">0,88</span></div>
-        </div>
-      </div>
+      <button class="modal-close" onclick="closeModal('phone-modal')">✕</button>
     </div>
   </div>
-</div>
 
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js","three/examples/jsm/":"https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"}}</script>
 
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+  <div class="modal-overlay" id="pc-modal" onclick="closeModal('pc-modal')">
+    <div class="pc-frame" onclick="event.stopPropagation()">
+      <div class="pc-titlebar">
+        <button class="pc-dot" style="background:#f87171" onclick="closeModal('pc-modal')"></button>
+        <div class="pc-dot" style="background:#fbbf24;cursor:default"></div>
+        <div class="pc-dot" style="background:#4ade80;cursor:default"></div>
+        <div class="pc-title">IVECO — Sistema de Logística Reversa · Painel de Triagem e Circularidade</div>
+      </div>
+      <div class="pc-screen">
+        <div class="pc-grid3">
+          <div class="pc-stat">
+            <div class="pc-stat-label">Coletados este mês</div>
+            <div class="pc-stat-val blue">1.248</div>
+            <div class="pc-stat-sub">módulos recebidos</div>
+          </div>
+          <div class="pc-stat">
+            <div class="pc-stat-label">Taxa reuso direto</div>
+            <div class="pc-stat-val green">61%</div>
+            <div class="pc-stat-sub">sem reprocessamento</div>
+          </div>
+          <div class="pc-stat">
+            <div class="pc-stat-label">CO₂ evitado (acum.)</div>
+            <div class="pc-stat-val green">7,7 t</div>
+            <div class="pc-stat-sub">vs. matéria-prima virgem</div>
+          </div>
+        </div>
 
-const viewer = document.getElementById('viewer');
-const scene  = new THREE.Scene();
-scene.background = new THREE.Color(0x0b1220);
-scene.add(new THREE.GridHelper(20, 30, 0x1a2535, 0x111d2e));
+        <div class="pc-panel">
+          <div class="pc-panel-title">Fluxo de Classificação — Coleta → Triagem → Destino</div>
+          <div class="pc-flow">
+            <div class="pc-flow-step">
+              <div class="pc-flow-step-icon" style="color:var(--blue-400)">📦</div>
+              <div class="pc-flow-step-label">Coleta</div>
+              <div class="pc-flow-step-sub">Direto do cliente</div>
+            </div>
+            <div class="pc-flow-arrow">›</div>
+            <div class="pc-flow-step">
+              <div class="pc-flow-step-icon" style="color:var(--amber-400)">🔍</div>
+              <div class="pc-flow-step-label">Triagem</div>
+              <div class="pc-flow-step-sub">Tempo · Condição</div>
+            </div>
+            <div class="pc-flow-arrow">›</div>
+            <div class="pc-flow-step" style="border-color:rgba(34,197,94,.3)">
+              <div class="pc-flow-step-icon" style="color:var(--green-400)">♻</div>
+              <div class="pc-flow-step-label">Reuso Direto</div>
+              <div class="pc-flow-step-sub">&lt;80k km · Boa</div>
+            </div>
+            <div class="pc-flow-arrow">›</div>
+            <div class="pc-flow-step" style="border-color:rgba(251,191,36,.25)">
+              <div class="pc-flow-step-icon" style="color:var(--amber-400)">🔧</div>
+              <div class="pc-flow-step-label">Remanufatura</div>
+              <div class="pc-flow-step-sub">80–150k km</div>
+            </div>
+            <div class="pc-flow-arrow">›</div>
+            <div class="pc-flow-step" style="border-color:rgba(96,165,250,.25)">
+              <div class="pc-flow-step-icon" style="color:var(--blue-400)">🏭</div>
+              <div class="pc-flow-step-label">Reciclagem PP</div>
+              <div class="pc-flow-step-sub">&gt;150k km</div>
+            </div>
+          </div>
+        </div>
 
-const camera = new THREE.PerspectiveCamera(48, viewer.clientWidth / viewer.clientHeight, 0.1, 1000);
-camera.position.set(4, 2.8, 6);
+        <div class="pc-panel">
+          <div class="pc-panel-title">Lotes em Processamento — Últimas 48h</div>
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th>ID Módulo</th>
+                <th>Frota</th>
+                <th>Km</th>
+                <th>Condição</th>
+                <th>Destino</th>
+                <th>Valor Recuperado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>MOD-27-PP-0091</td>
+                <td>A-017</td>
+                <td>68.200</td>
+                <td>Excelente</td>
+                <td><span class="pill green">Reuso Direto</span></td>
+                <td style="color:var(--green-400);font-family:'IBM Plex Mono',monospace">R$ 180</td>
+              </tr>
+              <tr>
+                <td>MOD-27-PP-0114</td>
+                <td>B-044</td>
+                <td>112.500</td>
+                <td>Regular</td>
+                <td><span class="pill amber">Remanufatura</span></td>
+                <td style="color:var(--amber-400);font-family:'IBM Plex Mono',monospace">R$ 95</td>
+              </tr>
+              <tr>
+                <td>MOD-27-PP-0082</td>
+                <td>A-082</td>
+                <td>87.400</td>
+                <td>Boa</td>
+                <td><span class="pill amber">Remanufatura</span></td>
+                <td style="color:var(--amber-400);font-family:'IBM Plex Mono',monospace">R$ 110</td>
+              </tr>
+              <tr>
+                <td>MOD-27-PP-0203</td>
+                <td>C-009</td>
+                <td>162.000</td>
+                <td>Desgastado</td>
+                <td><span class="pill blue">Reciclagem PP</span></td>
+                <td style="color:var(--blue-400);font-family:'IBM Plex Mono',monospace">R$ 32</td>
+              </tr>
+              <tr>
+                <td>MOD-27-PP-0178</td>
+                <td>A-031</td>
+                <td>44.300</td>
+                <td>Excelente</td>
+                <td><span class="pill green">Reuso Direto</span></td>
+                <td style="color:var(--green-400);font-family:'IBM Plex Mono',monospace">R$ 180</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(viewer.clientWidth, viewer.clientHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.6;
-renderer.domElement.id = 'threeCanvas';
-viewer.appendChild(renderer.domElement);
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="pc-panel">
+            <div class="pc-panel-title">Distribuição de Destinos — Mês Atual</div>
+            <div class="pc-bar-row">
+              <div class="pc-bar-header"><span class="pc-bar-label" style="color:var(--green-400)">Reuso
+                  Direto</span><span class="pc-bar-label" style="color:var(--green-400)">61%</span></div>
+              <div class="pc-bar-track">
+                <div class="pc-bar-fill" style="width:61%;background:var(--green-500)"></div>
+              </div>
+            </div>
+            <div class="pc-bar-row">
+              <div class="pc-bar-header"><span class="pc-bar-label"
+                  style="color:var(--amber-400)">Remanufatura</span><span class="pc-bar-label"
+                  style="color:var(--amber-400)">27%</span></div>
+              <div class="pc-bar-track">
+                <div class="pc-bar-fill" style="width:27%;background:var(--amber-400)"></div>
+              </div>
+            </div>
+            <div class="pc-bar-row">
+              <div class="pc-bar-header"><span class="pc-bar-label" style="color:var(--blue-400)">Reciclagem
+                  PP</span><span class="pc-bar-label" style="color:var(--blue-400)">12%</span></div>
+              <div class="pc-bar-track">
+                <div class="pc-bar-fill" style="width:12%;background:var(--blue-400)"></div>
+              </div>
+            </div>
+            <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-secondary)">
+              88% dos módulos retornam ao ciclo produtivo sem aterro.</div>
+          </div>
+          <div class="pc-panel">
+            <div class="pc-panel-title">Valor Circular Gerado — Ativo Produtivo</div>
+            <div class="ph-row"><span class="ph-row-label">Matéria-prima virgem evitada</span><span
+                class="ph-row-val green">2,3 t</span></div>
+            <div class="ph-row"><span class="ph-row-label">Custo médio por módulo</span><span
+                class="ph-row-val green">R$ 140</span></div>
+            <div class="ph-row"><span class="ph-row-label">Economia vs. ABS novo</span><span
+                class="ph-row-val green">−56%</span></div>
+            <div class="ph-row"><span class="ph-row-label">Retorno ao ciclo (mês)</span><span
+                class="ph-row-val amber">R$ 148 k</span></div>
+            <div class="ph-row"><span class="ph-row-label">Índice circularidade</span><span
+                class="ph-row-val green">0,88</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-scene.add(new THREE.AmbientLight(0xffffff, 3.5));
-const keyLight = new THREE.DirectionalLight(0xfff8f0, 4.0);
-keyLight.position.set(4, 6, 5); keyLight.castShadow = true;
-keyLight.shadow.mapSize.set(2048, 2048);
-keyLight.shadow.camera.left = keyLight.shadow.camera.bottom = -6;
-keyLight.shadow.camera.right = keyLight.shadow.camera.top = 6;
-scene.add(keyLight);
-const fillLight = new THREE.DirectionalLight(0xe8f4ff, 2.5);
-fillLight.position.set(-5, 3, 2); scene.add(fillLight);
-const rimLight = new THREE.DirectionalLight(0xffffff, 1.8);
-rimLight.position.set(0, 4, -6); scene.add(rimLight);
-const bounceLight = new THREE.DirectionalLight(0xd0e8ff, 1.0);
-bounceLight.position.set(0, -3, 2); scene.add(bounceLight);
+  <script
+    type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js","three/examples/jsm/":"https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"}}</script>
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; controls.dampingFactor = 0.07;
-controls.minDistance = 2; controls.maxDistance = 20;
-controls.target.set(0, 1.5, 0);
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-window.addEventListener('resize', () => {
-  camera.aspect = viewer.clientWidth / viewer.clientHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(viewer.clientWidth, viewer.clientHeight);
-});
 
-let targetMesh  = null;
-let hiddenMesh  = null;
-let isApplied   = false;
-let satTweenRaf = null;
+    const viewer = document.getElementById('viewer');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b1220);
+    scene.add(new THREE.GridHelper(20, 30, 0x1a2535, 0x111d2e));
 
-const vertSrc = `
+    const camera = new THREE.PerspectiveCamera(48, viewer.clientWidth / viewer.clientHeight, 0.1, 1000);
+    camera.position.set(4, 2.8, 6);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.6;
+    renderer.domElement.id = 'threeCanvas';
+    viewer.appendChild(renderer.domElement);
+
+
+    scene.add(new THREE.AmbientLight(0xffffff, 3.5));
+    const keyLight = new THREE.DirectionalLight(0xfff8f0, 4.0);
+    keyLight.position.set(4, 6, 5); keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(2048, 2048);
+    keyLight.shadow.camera.left = keyLight.shadow.camera.bottom = -6;
+    keyLight.shadow.camera.right = keyLight.shadow.camera.top = 6;
+    scene.add(keyLight);
+    const fillLight = new THREE.DirectionalLight(0xe8f4ff, 2.5);
+    fillLight.position.set(-5, 3, 2); scene.add(fillLight);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    rimLight.position.set(0, 4, -6); scene.add(rimLight);
+    const bounceLight = new THREE.DirectionalLight(0xd0e8ff, 1.0);
+    bounceLight.position.set(0, -3, 2); scene.add(bounceLight);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.dampingFactor = 0.07;
+    controls.minDistance = 2; controls.maxDistance = 20;
+    controls.target.set(0, 1.5, 0);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = viewer.clientWidth / viewer.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    });
+
+
+
+
+
+    let targetMesh = null;
+    let hiddenMesh = null;
+    let isApplied = false;
+    let satTweenRaf = null;
+
+
+
+
+
+
+    const vertSrc = `
   varying vec2 vUv;
   varying vec3 vNormal;
   varying vec3 vViewPos;
@@ -665,10 +2066,10 @@ const vertSrc = `
   }
 `;
 
-const fragSrc = `
+    const fragSrc = `
   uniform sampler2D u_map;
-  uniform float     u_saturation;
-  uniform float     u_hoverGlow;
+  uniform float     u_saturation;   
+  uniform float     u_hoverGlow;    
   varying vec2      vUv;
   varying vec3      vNormal;
   varying vec3      vViewPos;
@@ -681,540 +2082,1249 @@ const fragSrc = `
   void main() {
     vec4 texel = texture2D(u_map, vUv);
     if (texel.a < 0.05) discard;
+
+    
     vec3 grey   = toGrey(texel.rgb);
     vec3 colour = mix(grey, texel.rgb, u_saturation);
+
+    
     colour = mix(colour, colour + vec3(0.0, 0.4, 0.2), u_hoverGlow * 0.4);
 
     gl_FragColor = vec4(colour, texel.a);
   }
 `;
 
-let cabinShaderMat = null;
 
-new GLTFLoader().load('./Caminhão.gltf', gltf => {
-  const model = gltf.scene;
-  model.scale.set(3, 3, 3);
-  model.position.set(0, 0, 0);
+    let cabinShaderMat = null;
 
-  const meshNodes = [];
-  model.traverse(child => { if (child.isMesh) meshNodes.push(child); });
+    new GLTFLoader().load('./Caminhão.gltf', gltf => {
+      const model = gltf.scene;
+      model.scale.set(3, 3, 3);
+      model.position.set(0, 0, 0);
 
-  meshNodes.forEach((child, i) => {
-    child.castShadow    = true;
-    child.receiveShadow = true;
 
-    if (i === 0) {
+      const meshNodes = [];
+      model.traverse(child => { if (child.isMesh) meshNodes.push(child); });
 
-      targetMesh = child;
+      meshNodes.forEach((child, i) => {
+        child.castShadow = true;
+        child.receiveShadow = true;
 
-      const origMat = child.material;
-      const cabinTex = origMat.map || null;
-      if (cabinTex) cabinTex.colorSpace = THREE.SRGBColorSpace;
+        if (i === 0) {
 
-      cabinShaderMat = new THREE.ShaderMaterial({
-        uniforms: THREE.UniformsUtils.merge([
-          THREE.UniformsLib.lights,
-          {
-            u_map:        { value: cabinTex },
-            u_saturation: { value: 0.0 },
-            u_hoverGlow:  { value: 0.0 }
-          }
-        ]),
-        vertexShader:   vertSrc,
-        fragmentShader: fragSrc,
-        lights:         true,
-        side:           THREE.DoubleSide,
-        alphaTest:      0.05,
-        transparent:    false
+          targetMesh = child;
+
+
+          const origMat = child.material;
+          const cabinTex = origMat.map || null;
+          if (cabinTex) cabinTex.colorSpace = THREE.SRGBColorSpace;
+
+          cabinShaderMat = new THREE.ShaderMaterial({
+            uniforms: THREE.UniformsUtils.merge([
+              THREE.UniformsLib.lights,
+              {
+                u_map: { value: cabinTex },
+                u_saturation: { value: 0.0 },
+                u_hoverGlow: { value: 0.0 }
+              }
+            ]),
+            vertexShader: vertSrc,
+            fragmentShader: fragSrc,
+            lights: true,
+            side: THREE.DoubleSide,
+            alphaTest: 0.05,
+            transparent: false
+          });
+
+          child.material = cabinShaderMat;
+          labelEl.classList.add('visible');
+        } else if (i === 5) {
+
+          hiddenMesh = child;
+          child.visible = false;
+        }
+
       });
 
-      child.material = cabinShaderMat;
-      labelEl.classList.add('visible');
-    } else if (i === 5) {
+      scene.add(model);
+    }, undefined, e => console.error('GLTF error:', e));
 
-      hiddenMesh = child;
-      child.visible = false;
+
+    const labelEl = document.getElementById('target-label');
+    const _box3 = new THREE.Box3(), _vec3 = new THREE.Vector3();
+    function updateLabel() {
+      if (!targetMesh || isApplied) return;
+      _box3.setFromObject(targetMesh); _box3.getCenter(_vec3); _vec3.y = _box3.max.y;
+      _vec3.project(camera);
+      const r = renderer.domElement.getBoundingClientRect();
+      labelEl.style.left = ((_vec3.x * 0.5 + 0.5) * r.width + r.left) + 'px';
+      labelEl.style.top = ((-_vec3.y * 0.5 + 0.5) * r.height + r.top - 20) + 'px';
+      labelEl.style.transform = 'translateX(-50%)';
+      labelEl.style.visibility = _vec3.z > 1 ? 'hidden' : 'visible';
     }
 
-  });
 
-  scene.add(model);
-}, undefined, e => console.error('GLTF error:', e));
+    function tickIdlePulse(_ts) { }
 
-const labelEl = document.getElementById('target-label');
-const _box3 = new THREE.Box3(), _vec3 = new THREE.Vector3();
-function updateLabel() {
-  if (!targetMesh || isApplied) return;
-  _box3.setFromObject(targetMesh); _box3.getCenter(_vec3); _vec3.y = _box3.max.y;
-  _vec3.project(camera);
-  const r = renderer.domElement.getBoundingClientRect();
-  labelEl.style.left       = ((_vec3.x * 0.5 + 0.5) * r.width  + r.left) + 'px';
-  labelEl.style.top        = ((-_vec3.y * 0.5 + 0.5) * r.height + r.top - 20) + 'px';
-  labelEl.style.transform  = 'translateX(-50%)';
-  labelEl.style.visibility = _vec3.z > 1 ? 'hidden' : 'visible';
-}
 
-function tickIdlePulse(_ts) {}
+    function tweenSaturation(from, to, durationMs, onDone) {
+      if (satTweenRaf) { cancelAnimationFrame(satTweenRaf); satTweenRaf = null; }
+      if (!cabinShaderMat) return;
+      const t0 = performance.now();
+      cabinShaderMat.uniforms.u_saturation.value = from;
+      function step(now) {
+        const raw = Math.min((now - t0) / durationMs, 1.0);
+        const ease = 1 - Math.pow(1 - raw, 2.5);
+        cabinShaderMat.uniforms.u_saturation.value = from + (to - from) * ease;
+        if (raw < 1) satTweenRaf = requestAnimationFrame(step);
+        else { cabinShaderMat.uniforms.u_saturation.value = to; if (onDone) onDone(); }
+      }
+      satTweenRaf = requestAnimationFrame(step);
+    }
 
-function tweenSaturation(from, to, durationMs, onDone) {
-  if (satTweenRaf) { cancelAnimationFrame(satTweenRaf); satTweenRaf = null; }
-  if (!cabinShaderMat) return;
-  const t0 = performance.now();
-  cabinShaderMat.uniforms.u_saturation.value = from;
-  function step(now) {
-    const raw  = Math.min((now - t0) / durationMs, 1.0);
-    const ease = 1 - Math.pow(1 - raw, 2.5);
-    cabinShaderMat.uniforms.u_saturation.value = from + (to - from) * ease;
-    if (raw < 1) satTweenRaf = requestAnimationFrame(step);
-    else { cabinShaderMat.uniforms.u_saturation.value = to; if (onDone) onDone(); }
-  }
-  satTweenRaf = requestAnimationFrame(step);
-}
 
-const raycaster = new THREE.Raycaster(), ptr = new THREE.Vector2(-99, -99);
-const hitIndicator = document.getElementById('hit-indicator');
-let isNearTarget = false;
-function raycast(cx, cy) {
-  if (!targetMesh || isApplied) return false;
-  const r = renderer.domElement.getBoundingClientRect();
-  ptr.x =  ((cx - r.left) / r.width)  * 2 - 1;
-  ptr.y = -((cy - r.top)  / r.height) * 2 + 1;
-  raycaster.setFromCamera(ptr, camera);
-  const hit = raycaster.intersectObject(targetMesh, true).length > 0;
-  if (hit !== isNearTarget) {
-    isNearTarget = hit;
-    hitIndicator.textContent = hit ? 'Cabine — ALINHADO — SOLTE AQUI' : 'Cabine — FORA DE ALCANCE';
-    hitIndicator.classList.toggle('hit', hit);
-    if (cabinShaderMat) cabinShaderMat.uniforms.u_hoverGlow.value = hit ? 1.0 : 0.0;
-    ghost.classList.toggle('on-target', hit);
-  }
-  return hit;
-}
+    const raycaster = new THREE.Raycaster(), ptr = new THREE.Vector2(-99, -99);
+    const hitIndicator = document.getElementById('hit-indicator');
+    let isNearTarget = false;
+    function raycast(cx, cy) {
+      if (!targetMesh || isApplied) return false;
+      const r = renderer.domElement.getBoundingClientRect();
+      ptr.x = ((cx - r.left) / r.width) * 2 - 1;
+      ptr.y = -((cy - r.top) / r.height) * 2 + 1;
+      raycaster.setFromCamera(ptr, camera);
+      const hit = raycaster.intersectObject(targetMesh, true).length > 0;
+      if (hit !== isNearTarget) {
+        isNearTarget = hit;
+        hitIndicator.textContent = hit ? 'Cabine — ALINHADO — SOLTE AQUI' : 'Cabine — FORA DE ALCANCE';
+        hitIndicator.classList.toggle('hit', hit);
+        if (cabinShaderMat) cabinShaderMat.uniforms.u_hoverGlow.value = hit ? 1.0 : 0.0;
+        ghost.classList.toggle('on-target', hit);
+      }
+      return hit;
+    }
 
-const dragChip = document.getElementById('drag-chip');
-const ghost = document.getElementById('ghost');
-const dropOverlay = document.getElementById('drop-overlay');
-const dropHint = document.getElementById('drop-hint');
-const moduleCard = document.getElementById('module-card');
-let isDragging = false;
 
-dragChip.addEventListener('pointerdown', e => {
-  if (isApplied) return;
-  e.preventDefault();
-  isDragging = true;
-  dragChip.setPointerCapture(e.pointerId);
-  dragChip.classList.add('grabbed');
-  ghost.classList.add('active');
-  moveGhost(e.clientX, e.clientY);
-  dropOverlay.classList.add('active');
-  dropHint.classList.add('visible');
-  controls.enabled = false;
-  document.addEventListener('pointermove', onMove);
-  document.addEventListener('pointerup', onUp);
-});
-function onMove(e) { if (!isDragging) return; moveGhost(e.clientX, e.clientY); raycast(e.clientX, e.clientY); }
-function onUp(e) {
-  if (!isDragging) return;
-  isDragging = false;
-  document.removeEventListener('pointermove', onMove);
-  document.removeEventListener('pointerup', onUp);
-  controls.enabled = true;
-  ghost.classList.remove('active', 'on-target');
-  dropOverlay.classList.remove('active');
-  dropHint.classList.remove('visible');
-  dragChip.classList.remove('grabbed');
-  const r = viewer.getBoundingClientRect();
-  const ov = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-  if (ov && isNearTarget && !isApplied) applySubstitution();
-  else if (!isApplied && cabinShaderMat) cabinShaderMat.uniforms.u_hoverGlow.value = 0.0;
-  isNearTarget = false;
-  hitIndicator.textContent = 'Cabine — FORA DE ALCANCE';
-  hitIndicator.classList.remove('hit');
-}
-function moveGhost(x, y) { ghost.style.left = x + 'px'; ghost.style.top = y + 'px'; }
+    const dragChip = document.getElementById('drag-chip');
+    const ghost = document.getElementById('ghost');
+    const dropOverlay = document.getElementById('drop-overlay');
+    const dropHint = document.getElementById('drop-hint');
+    const moduleCard = document.getElementById('module-card');
+    let isDragging = false;
 
-const confettiCanvas = document.getElementById('confetti-canvas');
-const ctx2d = confettiCanvas.getContext('2d');
-let confettiParticles = [];
-let confettiRaf = null;
-
-function launchConfetti(cx, cy) {
-  confettiCanvas.width = viewer.clientWidth;
-  confettiCanvas.height = viewer.clientHeight;
-  confettiParticles = [];
-  const colors = ['#4ade80','#22c55e','#86efac','#bbf7d0','#fde047','#60a5fa','#fff','#a3e635','#34d399'];
-  const shapes = ['circle','square','star','diamond'];
-  for (let i = 0; i < 200; i++) {
-    const angle = (Math.random() * Math.PI * 2);
-    const speed = 4 + Math.random() * 9;
-    confettiParticles.push({
-      x: cx, y: cy,
-      vx: Math.cos(angle) * speed * (0.5 + Math.random()),
-      vy: Math.sin(angle) * speed - Math.random() * 6,
-      size: 4 + Math.random() * 9,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      shape: shapes[Math.floor(Math.random() * shapes.length)],
-      alpha: 1,
-      rot: Math.random() * Math.PI * 2,
-      rotSpeed: (Math.random() - 0.5) * 0.18,
-      gravity: 0.22 + Math.random() * 0.12,
-      life: 1,
-      decay: 0.008 + Math.random() * 0.012,
-      shimmer: Math.random() > 0.5
+    dragChip.addEventListener('pointerdown', e => {
+      if (isApplied) return;
+      e.preventDefault();
+      isDragging = true;
+      dragChip.setPointerCapture(e.pointerId);
+      dragChip.classList.add('grabbed');
+      ghost.classList.add('active');
+      moveGhost(e.clientX, e.clientY);
+      dropOverlay.classList.add('active');
+      dropHint.classList.add('visible');
+      controls.enabled = false;
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
     });
-  }
-  if (confettiRaf) cancelAnimationFrame(confettiRaf);
-  animateConfetti();
-}
-
-function drawStar(ctx, x, y, r, rot) {
-  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
-  ctx.beginPath();
-  for (let i = 0; i < 5; i++) {
-    const a = (i * 4 * Math.PI) / 5 - Math.PI / 2;
-    const b = ((i * 4 + 2) * Math.PI) / 5 - Math.PI / 2;
-    i === 0 ? ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r) : ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-    ctx.lineTo(Math.cos(b) * (r * 0.4), Math.sin(b) * (r * 0.4));
-  }
-  ctx.closePath(); ctx.fill(); ctx.restore();
-}
-
-function animateConfetti() {
-  ctx2d.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-  let alive = false;
-  for (const p of confettiParticles) {
-    p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
-    p.vx *= 0.99; p.rot += p.rotSpeed; p.life -= p.decay;
-    if (p.life <= 0) continue;
-    alive = true;
-    ctx2d.globalAlpha = p.life * (p.shimmer ? (0.7 + 0.3 * Math.sin(Date.now() * 0.015 + p.x)) : 1);
-    ctx2d.fillStyle = p.color;
-    ctx2d.shadowColor = p.color;
-    ctx2d.shadowBlur = p.shimmer ? 10 : 0;
-    if (p.shape === 'circle') {
-      ctx2d.beginPath(); ctx2d.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2); ctx2d.fill();
-    } else if (p.shape === 'square') {
-      ctx2d.save(); ctx2d.translate(p.x, p.y); ctx2d.rotate(p.rot);
-      ctx2d.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx2d.restore();
-    } else if (p.shape === 'star') {
-      drawStar(ctx2d, p.x, p.y, p.size / 2, p.rot);
-    } else {
-      ctx2d.save(); ctx2d.translate(p.x, p.y); ctx2d.rotate(p.rot);
-      ctx2d.beginPath(); ctx2d.moveTo(0, -p.size / 2); ctx2d.lineTo(p.size / 2, 0);
-      ctx2d.lineTo(0, p.size / 2); ctx2d.lineTo(-p.size / 2, 0); ctx2d.closePath(); ctx2d.fill();
-      ctx2d.restore();
+    function onMove(e) { if (!isDragging) return; moveGhost(e.clientX, e.clientY); raycast(e.clientX, e.clientY); }
+    function onUp(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      controls.enabled = true;
+      ghost.classList.remove('active', 'on-target');
+      dropOverlay.classList.remove('active');
+      dropHint.classList.remove('visible');
+      dragChip.classList.remove('grabbed');
+      const r = viewer.getBoundingClientRect();
+      const ov = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (ov && isNearTarget && !isApplied) applySubstitution();
+      else if (!isApplied && cabinShaderMat) cabinShaderMat.uniforms.u_hoverGlow.value = 0.0;
+      isNearTarget = false;
+      hitIndicator.textContent = 'Cabine — FORA DE ALCANCE';
+      hitIndicator.classList.remove('hit');
     }
-    ctx2d.shadowBlur = 0;
-  }
-  ctx2d.globalAlpha = 1;
-  if (alive) confettiRaf = requestAnimationFrame(animateConfetti);
-  else ctx2d.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-}
+    function moveGhost(x, y) { ghost.style.left = x + 'px'; ghost.style.top = y + 'px'; }
 
-function applySubstitution() {
-  if (!targetMesh || isApplied) return;
-  isApplied = true;
-  labelEl.classList.remove('visible');
 
-  if (cabinShaderMat) cabinShaderMat.uniforms.u_hoverGlow.value = 0.0;
-  tweenSaturation(0.0, 1.0, 1400);
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    const ctx2d = confettiCanvas.getContext('2d');
+    let confettiParticles = [];
+    let confettiRaf = null;
 
-  if (hiddenMesh) {
-    const mat = hiddenMesh.material;
-    hiddenMesh.visible = true;
-    const wasTransparent = mat.transparent;
-    mat.transparent = true; mat.opacity = 0;
-    const t0 = performance.now();
-    function fadeIn(now) {
-      const p = Math.min((now - t0) / 900, 1);
-      mat.opacity = p;
-      if (p < 1) requestAnimationFrame(fadeIn);
-      else { mat.opacity = 1; mat.transparent = wasTransparent; }
+    function launchConfetti(cx, cy) {
+      confettiCanvas.width = viewer.clientWidth;
+      confettiCanvas.height = viewer.clientHeight;
+      confettiParticles = [];
+      const colors = ['#4ade80', '#22c55e', '#86efac', '#bbf7d0', '#fde047', '#60a5fa', '#fff', '#a3e635', '#34d399'];
+      const shapes = ['circle', 'square', 'star', 'diamond'];
+      for (let i = 0; i < 200; i++) {
+        const angle = (Math.random() * Math.PI * 2);
+        const speed = 4 + Math.random() * 9;
+        confettiParticles.push({
+          x: cx, y: cy,
+          vx: Math.cos(angle) * speed * (0.5 + Math.random()),
+          vy: Math.sin(angle) * speed - Math.random() * 6,
+          size: 4 + Math.random() * 9,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          shape: shapes[Math.floor(Math.random() * shapes.length)],
+          alpha: 1,
+          rot: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 0.18,
+          gravity: 0.22 + Math.random() * 0.12,
+          life: 1,
+          decay: 0.008 + Math.random() * 0.012,
+          shimmer: Math.random() > 0.5
+        });
+      }
+      if (confettiRaf) cancelAnimationFrame(confettiRaf);
+      animateConfetti();
     }
-    setTimeout(() => requestAnimationFrame(fadeIn), 400);
-  }
 
-  _box3.setFromObject(targetMesh); _box3.getCenter(_vec3);
-  _vec3.project(camera);
-  const rd = renderer.domElement.getBoundingClientRect();
-  const vr = viewer.getBoundingClientRect();
-  const cx = (_vec3.x * 0.5 + 0.5) * rd.width  + rd.left - vr.left;
-  const cy = (-_vec3.y * 0.5 + 0.5) * rd.height + rd.top  - vr.top;
-  setTimeout(() => launchConfetti(cx, cy), 300);
+    function drawStar(ctx, x, y, r, rot) {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const a = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+        const b = ((i * 4 + 2) * Math.PI) / 5 - Math.PI / 2;
+        i === 0 ? ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r) : ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        ctx.lineTo(Math.cos(b) * (r * 0.4), Math.sin(b) * (r * 0.4));
+      }
+      ctx.closePath(); ctx.fill(); ctx.restore();
+    }
 
-  setStatusApplied(); setModuleApplied(); animateKPIs(); updateChart(true); showLog(true); growPlant();
-}
+    function animateConfetti() {
+      ctx2d.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      let alive = false;
+      for (const p of confettiParticles) {
+        p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
+        p.vx *= 0.99; p.rot += p.rotSpeed; p.life -= p.decay;
+        if (p.life <= 0) continue;
+        alive = true;
+        ctx2d.globalAlpha = p.life * (p.shimmer ? (0.7 + 0.3 * Math.sin(Date.now() * 0.015 + p.x)) : 1);
+        ctx2d.fillStyle = p.color;
+        ctx2d.shadowColor = p.color;
+        ctx2d.shadowBlur = p.shimmer ? 10 : 0;
+        if (p.shape === 'circle') {
+          ctx2d.beginPath(); ctx2d.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2); ctx2d.fill();
+        } else if (p.shape === 'square') {
+          ctx2d.save(); ctx2d.translate(p.x, p.y); ctx2d.rotate(p.rot);
+          ctx2d.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx2d.restore();
+        } else if (p.shape === 'star') {
+          drawStar(ctx2d, p.x, p.y, p.size / 2, p.rot);
+        } else {
+          ctx2d.save(); ctx2d.translate(p.x, p.y); ctx2d.rotate(p.rot);
+          ctx2d.beginPath(); ctx2d.moveTo(0, -p.size / 2); ctx2d.lineTo(p.size / 2, 0);
+          ctx2d.lineTo(0, p.size / 2); ctx2d.lineTo(-p.size / 2, 0); ctx2d.closePath(); ctx2d.fill();
+          ctx2d.restore();
+        }
+        ctx2d.shadowBlur = 0;
+      }
+      ctx2d.globalAlpha = 1;
+      if (alive) confettiRaf = requestAnimationFrame(animateConfetti);
+      else ctx2d.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    }
 
-window.resetSubstitution = function () {
-  if (!isApplied) return;
-  isApplied = false;
 
-  tweenSaturation(1.0, 0.0, 800);
-  if (cabinShaderMat) cabinShaderMat.uniforms.u_hoverGlow.value = 0.0;
+    function applySubstitution() {
+      if (!targetMesh || isApplied) return;
+      isApplied = true;
+      labelEl.classList.remove('visible');
 
-  if (hiddenMesh) { hiddenMesh.visible = false; }
 
-  if (confettiRaf) { cancelAnimationFrame(confettiRaf); ctx2d.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); }
-  labelEl.classList.add('visible');
-  resetStatus(); resetModuleUI(); resetKPIs(); updateChart(false); showLog(false); killPlant();
-};
+      if (cabinShaderMat) cabinShaderMat.uniforms.u_hoverGlow.value = 0.0;
+      tweenSaturation(0.0, 1.0, 1400);
 
-function setStatusApplied() {
-  const b = document.getElementById('status-badge');
-  b.textContent = 'SUBSTITUIÇÃO APLICADA'; b.style.background = 'rgba(34,197,94,.15)';
-  b.style.color = 'var(--green-400)'; b.style.borderColor = 'rgba(34,197,94,.4)';
-}
-function resetStatus() {
-  const b = document.getElementById('status-badge');
-  b.textContent = 'AGUARDANDO INTERAÇÃO'; b.style.background = 'rgba(96,165,250,.12)';
-  b.style.color = 'var(--blue-400)'; b.style.borderColor = 'rgba(96,165,250,.25)';
-}
-function setModuleApplied() {
-  moduleCard.classList.add('applied');
-  dragChip.classList.add('applied');
-  const row = document.getElementById('instruction-row');
-  row.style.background = 'rgba(34,197,94,.1)'; row.style.borderColor = 'rgba(34,197,94,.4)';
-  document.getElementById('instruction-text').textContent = 'Módulo PP aplicado com sucesso ✓';
-  document.getElementById('reset-btn').classList.add('visible');
-}
-function resetModuleUI() {
-  moduleCard.classList.remove('applied');
-  dragChip.classList.remove('applied');
-  const row = document.getElementById('instruction-row');
-  row.style.background = 'rgba(34,197,94,.06)'; row.style.borderColor = 'rgba(34,197,94,.25)';
-  document.getElementById('instruction-text').textContent = 'Arraste o chip verde para a peça azul no caminhão';
-  document.getElementById('reset-btn').classList.remove('visible');
-}
 
-const kpiBase = [['kpi-co2', '12,4 kg', 'ABS multipeça atual'], ['kpi-rec', '38%', 'Misto ABS/PA/PU'], ['kpi-cost', 'R$ 320', 'Parafusos + adesivos'], ['kpi-reuse', '0,28', 'Ciclos médios / uni.'], ['kpi-mat', '6 tipos', 'ABS·PA·PP·PU·Fe·Al'], ['kpi-trace', 'Nenhuma', 'Sem passaporte digital']];
-const kpiAfter = [['kpi-co2', '6,2 kg', '−50% emissões CO₂'], ['kpi-rec', '94%', '+147% recuperação mat.'], ['kpi-cost', 'R$ 140', '−56% — snap-fit direto'], ['kpi-reuse', '0,82', '+193% ciclos de uso'], ['kpi-mat', '1 tipo', 'PP pigmentado monomat.'], ['kpi-trace', 'QR + ID', 'Passaporte digital ativo']];
-function animateKPIs() {
-  kpiAfter.forEach(([id, val, delta], i) => {
-    setTimeout(() => {
-      const el = document.getElementById(id);
-      el.style.color = 'var(--amber-400)';
-      setTimeout(() => { el.textContent = val; el.style.color = 'var(--green-400)'; el.classList.add('applied'); const d = document.getElementById(id + '-d'); d.textContent = delta; d.className = 'kpi-delta good'; }, 300);
-    }, i * 70);
-  });
-}
-function resetKPIs() {
-  kpiBase.forEach(([id, val, delta]) => {
-    const el = document.getElementById(id); el.textContent = val; el.style.color = ''; el.classList.remove('applied');
-    const d = document.getElementById(id + '-d'); d.textContent = delta; d.className = 'kpi-delta';
-  });
-}
-function showLog(applied) {
-  const entries = applied ? [
-    ['Cabine identificada via raycasting 3D', 'green', 0],
-    ['ABS multipeça → PP monomaterial aplicado', 'green', 120],
-    ['Snap-fit habilitado — parafusos eliminados', 'green', 240],
-    ['CO₂: 12,4 kg → 6,2 kg/ciclo (−50%) [ISO 14040]', 'green', 360],
-    ['Reciclabilidade: 38% → 94% — monomaterial PP', 'green', 480],
-    ['Custo desmontagem: R$ 320 → R$ 140/unidade', 'green', 600],
-    ['Índice de reuso: 0,28 → 0,82 (+logística reversa)', 'green', 720],
-    ['Passaporte digital QR ativado — rastreabilidade plena', 'green', 840]
-  ] : [
-    ['Módulo PP desvinculado — ABS original restaurado', 'red', 0],
-    ['Indicadores ESG revertidos ao estado de referência', 'red', 100],
-    ['Passaporte digital desativado', 'red', 200]
-  ];
-  const log = document.getElementById('result-log'); log.innerHTML = '';
-  entries.forEach(([text, cls, delay]) => {
-    setTimeout(() => {
-      const el = document.createElement('div'); el.className = 'log-line';
-      el.innerHTML = `<span class="log-dot ${cls}"></span><span>${text}</span>`;
-      log.appendChild(el);
-    }, delay);
-  });
-}
+      if (hiddenMesh) {
+        const mat = hiddenMesh.material;
+        hiddenMesh.visible = true;
+        const wasTransparent = mat.transparent;
+        mat.transparent = true; mat.opacity = 0;
+        const t0 = performance.now();
+        function fadeIn(now) {
+          const p = Math.min((now - t0) / 900, 1);
+          mat.opacity = p;
+          if (p < 1) requestAnimationFrame(fadeIn);
+          else { mat.opacity = 1; mat.transparent = wasTransparent; }
+        }
+        setTimeout(() => requestAnimationFrame(fadeIn), 400);
+      }
 
-let barChart = null;
-const chartLabels = ['CO₂ (invertido)', 'Reciclabilidade', 'Custo (invertido)', 'Modularidade', 'Monomaterial', 'Rastreabilidade'];
-const before = [28, 38, 32, 22, 18, 5];
-const after = [86, 94, 78, 90, 96, 92];
-const beforeVals = ['12,4 kg CO₂ (3,10 kg/kg)', '38% reciclável', 'R$ 320 desmontagem', 'Baixa', '6 materiais distintos', 'Nenhuma'];
-const afterVals = ['6,2 kg CO₂ (1,91 kg/kg)', '94% reciclável', 'R$ 140 desmontagem', 'Alta — snap-fit', '1 material PP', 'QR + ID único'];
-const descs = [
-  'PP produz ~1,91 kg CO₂/kg vs. ~3,10 kg CO₂/kg do ABS (PlasticsEurope/ETC-WMGE 2021). Para ~6 kg de peça: 11,5 kg vs. 18,6 kg de CO₂, redução de ~50% no ciclo de produção + fim de vida.',
-  'PP puro (94%) vs. mix ABS/PA/PU (38%). A monomaterialidade elimina a etapa de triagem antes da reciclagem, viabilizando recuperação quase integral do polímero.',
-  'Snap-fit + 4 parafusos estruturais eliminam adesivos e soldas permanentes. Custo de desmontagem cai de R$ 320 para R$ 140/unidade — redução de 56%.',
-  'Módulos independentes com interfaces padronizadas permitem substituição localizada de componentes danificados sem descarte do conjunto completo.',
-  'Um único polímero (PP) elimina etapas de separação, aumenta pureza do reciclado e viabiliza reuso direto após inspeção técnica simples.',
-  'QR Code + ID único por módulo habilita rastreabilidade completa do ciclo de vida — pré-requisito técnico para logística reversa e economia circular escalável.'
-];
 
-const ttEl = document.getElementById('chart-tooltip');
-let ttVisible = false;
+      _box3.setFromObject(targetMesh); _box3.getCenter(_vec3);
+      _vec3.project(camera);
+      const rd = renderer.domElement.getBoundingClientRect();
+      const vr = viewer.getBoundingClientRect();
+      const cx = (_vec3.x * 0.5 + 0.5) * rd.width + rd.left - vr.left;
+      const cy = (-_vec3.y * 0.5 + 0.5) * rd.height + rd.top - vr.top;
+      setTimeout(() => launchConfetti(cx, cy), 300);
 
-(function initChart() {
-  const canvas = document.getElementById('chart');
-  const ctx = canvas.getContext('2d');
-  barChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: chartLabels,
-      datasets: [
-        { label: 'ABS Atual', data: before, backgroundColor: 'rgba(74,85,104,.5)', borderColor: 'rgba(100,116,139,.8)', borderWidth: 1, borderRadius: 3, borderSkipped: false },
-        { label: 'PP Monomaterial', data: before.map(() => 0), backgroundColor: 'rgba(34,197,94,.38)', borderColor: 'rgba(34,197,94,.9)', borderWidth: 1, borderRadius: 3, borderSkipped: false }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      indexAxis: 'y',
-      animation: { duration: 700, easing: 'easeInOutQuart' },
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          enabled: false,
-          external: function ({ chart, tooltip }) {
-            if (tooltip.opacity === 0) {
-              ttEl.classList.remove('visible');
-              ttVisible = false;
-              return;
+      setStatusApplied(); setModuleApplied(); animateKPIs(); updateChart(true); showLog(true); growPlant();
+    }
+
+    window.resetSubstitution = function () {
+      if (!isApplied) return;
+      isApplied = false;
+
+
+      tweenSaturation(1.0, 0.0, 800);
+      if (cabinShaderMat) cabinShaderMat.uniforms.u_hoverGlow.value = 0.0;
+
+
+      if (hiddenMesh) { hiddenMesh.visible = false; }
+
+      if (confettiRaf) { cancelAnimationFrame(confettiRaf); ctx2d.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); }
+      labelEl.classList.add('visible');
+      resetStatus(); resetModuleUI(); resetKPIs(); updateChart(false); showLog(false); killPlant();
+    };
+
+    function setStatusApplied() {
+      const b = document.getElementById('status-badge');
+      b.textContent = 'SUBSTITUIÇÃO APLICADA'; b.style.background = 'rgba(34,197,94,.15)';
+      b.style.color = 'var(--green-400)'; b.style.borderColor = 'rgba(34,197,94,.4)';
+    }
+    function resetStatus() {
+      const b = document.getElementById('status-badge');
+      b.textContent = 'AGUARDANDO INTERAÇÃO'; b.style.background = 'rgba(96,165,250,.12)';
+      b.style.color = 'var(--blue-400)'; b.style.borderColor = 'rgba(96,165,250,.25)';
+    }
+    function setModuleApplied() {
+      moduleCard.classList.add('applied');
+      dragChip.classList.add('applied');
+      const row = document.getElementById('instruction-row');
+      row.style.background = 'rgba(34,197,94,.1)'; row.style.borderColor = 'rgba(34,197,94,.4)';
+      document.getElementById('instruction-text').textContent = 'Módulo PP aplicado com sucesso ✓';
+      document.getElementById('reset-btn').classList.add('visible');
+    }
+    function resetModuleUI() {
+      moduleCard.classList.remove('applied');
+      dragChip.classList.remove('applied');
+      const row = document.getElementById('instruction-row');
+      row.style.background = 'rgba(34,197,94,.06)'; row.style.borderColor = 'rgba(34,197,94,.25)';
+      document.getElementById('instruction-text').textContent = 'Arraste o chip verde para a peça azul no caminhão';
+      document.getElementById('reset-btn').classList.remove('visible');
+    }
+
+    const kpiBase = [['kpi-co2', '12,4 kg', 'ABS multipeça atual'], ['kpi-rec', '38%', 'Misto ABS/PA/PU'], ['kpi-cost', 'R$ 320', 'Parafusos + adesivos'], ['kpi-reuse', '0,28', 'Ciclos médios / uni.'], ['kpi-mat', '6 tipos', 'ABS·PA·PP·PU·Fe·Al'], ['kpi-trace', 'Nenhuma', 'Sem passaporte digital']];
+    const kpiAfter = [['kpi-co2', '6,2 kg', '−50% emissões CO₂'], ['kpi-rec', '94%', '+147% recuperação mat.'], ['kpi-cost', 'R$ 140', '−56% — snap-fit direto'], ['kpi-reuse', '0,82', '+193% ciclos de uso'], ['kpi-mat', '1 tipo', 'PP pigmentado monomat.'], ['kpi-trace', 'QR + ID', 'Passaporte digital ativo']];
+    function animateKPIs() {
+      kpiAfter.forEach(([id, val, delta], i) => {
+        setTimeout(() => {
+          const el = document.getElementById(id);
+          el.style.color = 'var(--amber-400)';
+          setTimeout(() => { el.textContent = val; el.style.color = 'var(--green-400)'; el.classList.add('applied'); const d = document.getElementById(id + '-d'); d.textContent = delta; d.className = 'kpi-delta good'; }, 300);
+        }, i * 70);
+      });
+    }
+    function resetKPIs() {
+      kpiBase.forEach(([id, val, delta]) => {
+        const el = document.getElementById(id); el.textContent = val; el.style.color = ''; el.classList.remove('applied');
+        const d = document.getElementById(id + '-d'); d.textContent = delta; d.className = 'kpi-delta';
+      });
+    }
+    function showLog(applied) {
+      const entries = applied ? [
+        ['Cabine identificada via raycasting 3D', 'green', 0],
+        ['ABS multipeça → PP monomaterial aplicado', 'green', 120],
+        ['Snap-fit habilitado — parafusos eliminados', 'green', 240],
+        ['CO₂: 12,4 kg → 6,2 kg/ciclo (−50%) [ISO 14040]', 'green', 360],
+        ['Reciclabilidade: 38% → 94% — monomaterial PP', 'green', 480],
+        ['Custo desmontagem: R$ 320 → R$ 140/unidade', 'green', 600],
+        ['Índice de reuso: 0,28 → 0,82 (+logística reversa)', 'green', 720],
+        ['Passaporte digital QR ativado — rastreabilidade plena', 'green', 840]
+      ] : [
+        ['Módulo PP desvinculado — ABS original restaurado', 'red', 0],
+        ['Indicadores ESG revertidos ao estado de referência', 'red', 100],
+        ['Passaporte digital desativado', 'red', 200]
+      ];
+      const log = document.getElementById('result-log'); log.innerHTML = '';
+      entries.forEach(([text, cls, delay]) => {
+        setTimeout(() => {
+          const el = document.createElement('div'); el.className = 'log-line';
+          el.innerHTML = `<span class="log-dot ${cls}"></span><span>${text}</span>`;
+          log.appendChild(el);
+        }, delay);
+      });
+    }
+
+
+    let barChart = null;
+    const chartLabels = ['CO₂ (invertido)', 'Reciclabilidade', 'Custo (invertido)', 'Modularidade', 'Monomaterial', 'Rastreabilidade'];
+    const before = [28, 38, 32, 22, 18, 5];
+    const after = [86, 94, 78, 90, 96, 92];
+    const beforeVals = ['12,4 kg CO₂ (3,10 kg/kg)', '38% reciclável', 'R$ 320 desmontagem', 'Baixa', '6 materiais distintos', 'Nenhuma'];
+    const afterVals = ['6,2 kg CO₂ (1,91 kg/kg)', '94% reciclável', 'R$ 140 desmontagem', 'Alta — snap-fit', '1 material PP', 'QR + ID único'];
+    const descs = [
+      'PP produz ~1,91 kg CO₂/kg vs. ~3,10 kg CO₂/kg do ABS (PlasticsEurope/ETC-WMGE 2021). Para ~6 kg de peça: 11,5 kg vs. 18,6 kg de CO₂, redução de ~50% no ciclo de produção + fim de vida.',
+      'PP puro (94%) vs. mix ABS/PA/PU (38%). A monomaterialidade elimina a etapa de triagem antes da reciclagem, viabilizando recuperação quase integral do polímero.',
+      'Snap-fit + 4 parafusos estruturais eliminam adesivos e soldas permanentes. Custo de desmontagem cai de R$ 320 para R$ 140/unidade — redução de 56%.',
+      'Módulos independentes com interfaces padronizadas permitem substituição localizada de componentes danificados sem descarte do conjunto completo.',
+      'Um único polímero (PP) elimina etapas de separação, aumenta pureza do reciclado e viabiliza reuso direto após inspeção técnica simples.',
+      'QR Code + ID único por módulo habilita rastreabilidade completa do ciclo de vida — pré-requisito técnico para logística reversa e economia circular escalável.'
+    ];
+
+    const ttEl = document.getElementById('chart-tooltip');
+    let ttVisible = false;
+
+    (function initChart() {
+      const canvas = document.getElementById('chart');
+      const ctx = canvas.getContext('2d');
+      barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartLabels,
+          datasets: [
+            { label: 'ABS Atual', data: before, backgroundColor: 'rgba(74,85,104,.5)', borderColor: 'rgba(100,116,139,.8)', borderWidth: 1, borderRadius: 3, borderSkipped: false },
+            { label: 'PP Monomaterial', data: before.map(() => 0), backgroundColor: 'rgba(34,197,94,.38)', borderColor: 'rgba(34,197,94,.9)', borderWidth: 1, borderRadius: 3, borderSkipped: false }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          indexAxis: 'y',
+          animation: { duration: 700, easing: 'easeInOutQuart' },
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: false,
+              external: function ({ chart, tooltip }) {
+                if (tooltip.opacity === 0) {
+                  ttEl.classList.remove('visible');
+                  ttVisible = false;
+                  return;
+                }
+                const i = tooltip.dataIndex;
+                if (i == null) return;
+                document.getElementById('tt-title').textContent = chartLabels[i];
+                document.getElementById('tt-before').textContent = beforeVals[i];
+                document.getElementById('tt-after').textContent = afterVals[i];
+                const diff = after[i] - before[i];
+                document.getElementById('tt-delta').textContent = '+' + diff + ' pts';
+                document.getElementById('tt-desc').textContent = descs[i];
+
+
+                const canvasRect = chart.canvas.getBoundingClientRect();
+                const caretX = canvasRect.left + tooltip.caretX;
+                const caretY = canvasRect.top + tooltip.caretY;
+
+                const ttW = 240, ttH = 160;
+                let left = caretX + 16;
+                let top = caretY - 24;
+
+
+                if (left + ttW > window.innerWidth - 10) left = caretX - ttW - 16;
+
+                if (top + ttH > window.innerHeight - 10) top = window.innerHeight - ttH - 10;
+
+                if (top < 10) top = 10;
+
+                ttEl.style.left = left + 'px';
+                ttEl.style.top = top + 'px';
+                ttEl.classList.add('visible');
+                ttVisible = true;
+              }
             }
-            const i = tooltip.dataIndex;
-            if (i == null) return;
-            document.getElementById('tt-title').textContent = chartLabels[i];
-            document.getElementById('tt-before').textContent = beforeVals[i];
-            document.getElementById('tt-after').textContent = afterVals[i];
-            const diff = after[i] - before[i];
-            document.getElementById('tt-delta').textContent = '+' + diff + ' pts';
-            document.getElementById('tt-desc').textContent = descs[i];
-
-            const canvasRect = chart.canvas.getBoundingClientRect();
-            const caretX = canvasRect.left + tooltip.caretX;
-            const caretY = canvasRect.top + tooltip.caretY;
-
-            const ttW = 240, ttH = 160;
-            let left = caretX + 16;
-            let top = caretY - 24;
-
-            if (left + ttW > window.innerWidth - 10) left = caretX - ttW - 16;
-
-            if (top + ttH > window.innerHeight - 10) top = window.innerHeight - ttH - 10;
-
-            if (top < 10) top = 10;
-
-            ttEl.style.left = left + 'px';
-            ttEl.style.top = top + 'px';
-            ttEl.classList.add('visible');
-            ttVisible = true;
+          },
+          scales: {
+            x: {
+              min: 0, max: 100,
+              ticks: { font: { family: 'IBM Plex Mono', size: 9 }, color: '#7a8fa6', stepSize: 25, callback: v => v + '%' },
+              grid: { color: 'rgba(255,255,255,.05)' },
+              border: { color: 'rgba(255,255,255,.08)' }
+            },
+            y: {
+              ticks: { font: { family: 'IBM Plex Mono', size: 9 }, color: '#9ab2c8', padding: 4 },
+              grid: { display: false },
+              border: { display: false }
+            }
           }
         }
-      },
-      scales: {
-        x: {
-          min: 0, max: 100,
-          ticks: { font: { family: 'IBM Plex Mono', size: 9 }, color: '#7a8fa6', stepSize: 25, callback: v => v + '%' },
-          grid: { color: 'rgba(255,255,255,.05)' },
-          border: { color: 'rgba(255,255,255,.08)' }
-        },
-        y: {
-          ticks: { font: { family: 'IBM Plex Mono', size: 9 }, color: '#9ab2c8', padding: 4 },
-          grid: { display: false },
-          border: { display: false }
-        }
+      });
+
+
+      canvas.addEventListener('mouseleave', () => {
+        ttEl.classList.remove('visible');
+        ttVisible = false;
+      });
+    })();
+
+    function updateChart(applied) {
+      if (!barChart) return;
+      barChart.data.datasets[1].data = applied ? after : before.map(() => 0);
+      barChart.update();
+    }
+
+
+    const plantSvg = document.getElementById('plant-svg');
+    let plantAlive = false;
+    function ns(t) { return document.createElementNS('http://www.w3.org/2000/svg', t); }
+    function attr(el, obj) { for (const [k, v] of Object.entries(obj)) el.setAttribute(k, v); return el; }
+    function makeStem(d, stroke, sw, delay, dur) {
+      const p = ns('path'); attr(p, { d, stroke, 'stroke-width': sw, fill: 'none', 'stroke-linecap': 'round' });
+      p.style.cssText = `animation:grow-up ${dur}s cubic-bezier(.22,1,.36,1) ${delay}s both;transform-origin:bottom;transform-box:fill-box;`; return p;
+    }
+    function makeLeaf(cx, cy, rx, ry, fill, rot, delay) {
+      const e = ns('ellipse'); attr(e, { cx, cy, rx, ry, fill, transform: `rotate(${rot} ${cx} ${cy})` });
+      e.style.cssText = `animation:leaf-pop .5s cubic-bezier(.34,1.56,.64,1) ${delay}s both;transform-origin:${cx}px ${cy}px;transform-box:fill-box;`; return e;
+    }
+    function makeFlower(cx, cy, pr, pc, petC, cenC, delay) {
+      const g = ns('g');
+      g.style.cssText = `animation:bloom-in .5s cubic-bezier(.34,1.56,.64,1) ${delay}s both;transform-origin:${cx}px ${cy}px;transform-box:fill-box;`;
+      for (let a = 0; a < 360; a += 60) {
+        const rad = a * Math.PI / 180;
+        const p = ns('circle'); attr(p, { cx: cx + Math.cos(rad) * (pc + 2), cy: cy + Math.sin(rad) * (pc + 2), r: pc * .7, fill: petC });
+        g.appendChild(p);
+      }
+      const c = ns('circle'); attr(c, { cx, cy, r: pc * .6, fill: cenC }); g.appendChild(c); return g;
+    }
+    function growPlant() {
+      if (plantAlive) return; plantAlive = true; plantSvg.innerHTML = '';
+      const root = ns('g'); root.id = 'plant-root';
+      const soil = ns('ellipse'); attr(soil, { cx: '110', cy: '195', rx: '45', ry: '8', fill: '#1a3020', opacity: '.95' }); root.appendChild(soil);
+      root.appendChild(makeStem('M110 195 C110 170 106 145 108 110', '#22c55e', '3.5', 0, 1.2));
+      root.appendChild(makeStem('M109 158 C98 150 82 146 68 140', '#22c55e', '2', .9, .55));
+      root.appendChild(makeStem('M109 135 C120 127 134 124 148 118', '#22c55e', '2', .8, .55));
+      root.appendChild(makeStem('M108 118 C102 110 100 104 100 97', '#4ade80', '1.5', 1.1, .4));
+      root.appendChild(makeLeaf('82', '143', 16, 7, '#16a34a', '-40', 1.1));
+      root.appendChild(makeLeaf('144', '121', 15, 7, '#16a34a', '35', 1.05));
+      root.appendChild(makeLeaf('108', '125', 10, 5, '#4ade80', '-10', 1.3));
+      root.appendChild(makeLeaf('114', '108', 8, 4, '#4ade80', '20', 1.45));
+      root.appendChild(makeFlower(108, 106, 7, 5.5, '#f9a8d4', '#fbbf24', 1.4));
+      root.appendChild(makeFlower(67, 137, 6, 4.5, '#86efac', '#fde047', 1.6));
+      root.appendChild(makeFlower(149, 114, 6, 4.5, '#93c5fd', '#fde047', 1.65));
+      root.appendChild(makeFlower(100, 94, 5, 3.5, '#fda4af', '#fbbf24', 1.8));
+      [[95, 87], [115, 96], [73, 130], [153, 106], [104, 82]].forEach(([x, y], i) => {
+        const sp = ns('circle'); attr(sp, { cx: x, cy: y, r: '1.8', fill: '#4ade80', opacity: '.8' });
+        sp.style.cssText = `animation:bloom-in .3s ease ${1.9 + i * .1}s both;transform-origin:${x}px ${y}px;transform-box:fill-box;`;
+        root.appendChild(sp);
+      });
+      plantSvg.appendChild(root);
+    }
+    function killPlant() {
+      if (!plantAlive) return;
+      const pg = document.getElementById('plant-root');
+      if (pg) { pg.style.cssText = 'animation:fade-out-plant .8s ease forwards;'; setTimeout(() => { plantSvg.innerHTML = ''; plantAlive = false; }, 900); }
+    }
+
+
+    const resizeHandle = document.getElementById('resize-handle');
+    const rootEl = document.getElementById('root');
+    let resizing = false, startX = 0, startW = 0;
+    resizeHandle.addEventListener('pointerdown', e => {
+      resizing = true; startX = e.clientX;
+      startW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w'));
+      resizeHandle.classList.add('dragging'); resizeHandle.setPointerCapture(e.pointerId); controls.enabled = false;
+    });
+    document.addEventListener('pointermove', e => {
+      if (!resizing) return;
+      const delta = startX - e.clientX;
+      const newW = Math.max(280, Math.min(700, startW + delta));
+      document.documentElement.style.setProperty('--sidebar-w', newW + 'px');
+      rootEl.style.gridTemplateColumns = `1fr 5px ${newW}px`;
+      setTimeout(() => { renderer.setSize(viewer.clientWidth, viewer.clientHeight); camera.aspect = viewer.clientWidth / viewer.clientHeight; camera.updateProjectionMatrix(); }, 0);
+    });
+    document.addEventListener('pointerup', () => { if (!resizing) return; resizing = false; resizeHandle.classList.remove('dragging'); controls.enabled = true; });
+
+
+    window.openPhone = () => document.getElementById('phone-modal').classList.add('open');
+    window.openPC = () => document.getElementById('pc-modal').classList.add('open');
+    window.closeModal = id => document.getElementById(id).classList.remove('open');
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open')); });
+
+
+    window.switchTab = function (tabId) {
+      document.querySelectorAll('.phone-tab').forEach((t, i) => {
+        const ids = ['tab-passaporte', 'tab-material', 'tab-co2'];
+        t.classList.toggle('active', ids[i] === tabId);
+      });
+      document.querySelectorAll('.phone-tab-panel').forEach(p => p.classList.toggle('active', p.id === tabId));
+    };
+
+
+    function animate(ts) { requestAnimationFrame(animate); controls.update(); tickIdlePulse(ts); updateLabel(); renderer.render(scene, camera); }
+    animate(0);
+  </script>
+
+
+  <style>
+    #tour-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      background: rgba(4, 8, 16, .72);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s ease;
+    }
+
+    #tour-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    #tour-card {
+      background: var(--bg-panel);
+      border: 1px solid rgba(34, 197, 94, .2);
+      border-radius: 18px;
+      width: 480px;
+      overflow: hidden;
+      box-shadow: 0 40px 100px rgba(0, 0, 0, .75), 0 0 0 1px rgba(34, 197, 94, .08);
+      transform: translateY(18px) scale(.97);
+      transition: transform .35s cubic-bezier(.22, 1, .36, 1);
+    }
+
+    #tour-overlay.open #tour-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .tour-header {
+      padding: 20px 22px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tour-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tour-brand-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--green-600), var(--green-400));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, .3);
+    }
+
+    .tour-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+    }
+
+    .tour-subtitle {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--text-secondary);
+      letter-spacing: .06em;
+      margin-top: 2px;
+    }
+
+    .tour-close-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .05);
+      border: 1px solid rgba(255, 255, 255, .08);
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+      line-height: 1;
+    }
+
+    .tour-close-btn:hover {
+      background: rgba(255, 255, 255, .12);
+      color: var(--text-primary);
+    }
+
+
+    .tour-steps {
+      padding: 0;
+      position: relative;
+    }
+
+    .tour-step {
+      display: none;
+      flex-direction: column;
+      animation: tour-in .3s cubic-bezier(.22, 1, .36, 1) both;
+    }
+
+    .tour-step.active {
+      display: flex;
+    }
+
+    @keyframes tour-in {
+      from {
+        opacity: 0;
+        transform: translateX(18px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
       }
     }
-  });
 
-  canvas.addEventListener('mouseleave', () => {
-    ttEl.classList.remove('visible');
-    ttVisible = false;
-  });
-})();
+    .tour-step-visual {
+      height: 148px;
+      background: var(--bg-base);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
 
-function updateChart(applied) {
-  if (!barChart) return;
-  barChart.data.datasets[1].data = applied ? after : before.map(() => 0);
-  barChart.update();
-}
+    .tour-step-visual::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 110%, rgba(34, 197, 94, .07) 0%, transparent 70%);
+      pointer-events: none;
+    }
 
-const plantSvg = document.getElementById('plant-svg');
-let plantAlive = false;
-function ns(t) { return document.createElementNS('http:
-function attr(el, obj) { for (const [k, v] of Object.entries(obj)) el.setAttribute(k, v); return el; }
-function makeStem(d, stroke, sw, delay, dur) {
-  const p = ns('path'); attr(p, { d, stroke, 'stroke-width': sw, fill: 'none', 'stroke-linecap': 'round' });
-  p.style.cssText = `animation:grow-up ${dur}s cubic-bezier(.22,1,.36,1) ${delay}s both;transform-origin:bottom;transform-box:fill-box;`; return p;
-}
-function makeLeaf(cx, cy, rx, ry, fill, rot, delay) {
-  const e = ns('ellipse'); attr(e, { cx, cy, rx, ry, fill, transform: `rotate(${rot} ${cx} ${cy})` });
-  e.style.cssText = `animation:leaf-pop .5s cubic-bezier(.34,1.56,.64,1) ${delay}s both;transform-origin:${cx}px ${cy}px;transform-box:fill-box;`; return e;
-}
-function makeFlower(cx, cy, pr, pc, petC, cenC, delay) {
-  const g = ns('g');
-  g.style.cssText = `animation:bloom-in .5s cubic-bezier(.34,1.56,.64,1) ${delay}s both;transform-origin:${cx}px ${cy}px;transform-box:fill-box;`;
-  for (let a = 0; a < 360; a += 60) {
-    const rad = a * Math.PI / 180;
-    const p = ns('circle'); attr(p, { cx: cx + Math.cos(rad) * (pc + 2), cy: cy + Math.sin(rad) * (pc + 2), r: pc * .7, fill: petC });
-    g.appendChild(p);
-  }
-  const c = ns('circle'); attr(c, { cx, cy, r: pc * .6, fill: cenC }); g.appendChild(c); return g;
-}
-function growPlant() {
-  if (plantAlive) return; plantAlive = true; plantSvg.innerHTML = '';
-  const root = ns('g'); root.id = 'plant-root';
-  const soil = ns('ellipse'); attr(soil, { cx: '110', cy: '195', rx: '45', ry: '8', fill: '#1a3020', opacity: '.95' }); root.appendChild(soil);
-  root.appendChild(makeStem('M110 195 C110 170 106 145 108 110', '#22c55e', '3.5', 0, 1.2));
-  root.appendChild(makeStem('M109 158 C98 150 82 146 68 140', '#22c55e', '2', .9, .55));
-  root.appendChild(makeStem('M109 135 C120 127 134 124 148 118', '#22c55e', '2', .8, .55));
-  root.appendChild(makeStem('M108 118 C102 110 100 104 100 97', '#4ade80', '1.5', 1.1, .4));
-  root.appendChild(makeLeaf('82', '143', 16, 7, '#16a34a', '-40', 1.1));
-  root.appendChild(makeLeaf('144', '121', 15, 7, '#16a34a', '35', 1.05));
-  root.appendChild(makeLeaf('108', '125', 10, 5, '#4ade80', '-10', 1.3));
-  root.appendChild(makeLeaf('114', '108', 8, 4, '#4ade80', '20', 1.45));
-  root.appendChild(makeFlower(108, 106, 7, 5.5, '#f9a8d4', '#fbbf24', 1.4));
-  root.appendChild(makeFlower(67, 137, 6, 4.5, '#86efac', '#fde047', 1.6));
-  root.appendChild(makeFlower(149, 114, 6, 4.5, '#93c5fd', '#fde047', 1.65));
-  root.appendChild(makeFlower(100, 94, 5, 3.5, '#fda4af', '#fbbf24', 1.8));
-  [[95, 87], [115, 96], [73, 130], [153, 106], [104, 82]].forEach(([x, y], i) => {
-    const sp = ns('circle'); attr(sp, { cx: x, cy: y, r: '1.8', fill: '#4ade80', opacity: '.8' });
-    sp.style.cssText = `animation:bloom-in .3s ease ${1.9 + i * .1}s both;transform-origin:${x}px ${y}px;transform-box:fill-box;`;
-    root.appendChild(sp);
-  });
-  plantSvg.appendChild(root);
-}
-function killPlant() {
-  if (!plantAlive) return;
-  const pg = document.getElementById('plant-root');
-  if (pg) { pg.style.cssText = 'animation:fade-out-plant .8s ease forwards;'; setTimeout(() => { plantSvg.innerHTML = ''; plantAlive = false; }, 900); }
-}
+    .tour-step-body {
+      padding: 18px 22px 14px;
+    }
 
-const resizeHandle = document.getElementById('resize-handle');
-const rootEl = document.getElementById('root');
-let resizing = false, startX = 0, startW = 0;
-resizeHandle.addEventListener('pointerdown', e => {
-  resizing = true; startX = e.clientX;
-  startW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w'));
-  resizeHandle.classList.add('dragging'); resizeHandle.setPointerCapture(e.pointerId); controls.enabled = false;
-});
-document.addEventListener('pointermove', e => {
-  if (!resizing) return;
-  const delta = startX - e.clientX;
-  const newW = Math.max(280, Math.min(700, startW + delta));
-  document.documentElement.style.setProperty('--sidebar-w', newW + 'px');
-  rootEl.style.gridTemplateColumns = `1fr 5px ${newW}px`;
-  setTimeout(() => { renderer.setSize(viewer.clientWidth, viewer.clientHeight); camera.aspect = viewer.clientWidth / viewer.clientHeight; camera.updateProjectionMatrix(); }, 0);
-});
-document.addEventListener('pointerup', () => { if (!resizing) return; resizing = false; resizeHandle.classList.remove('dragging'); controls.enabled = true; });
+    .tour-step-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--green-500);
+      margin-bottom: 6px;
+    }
 
-window.openPhone = () => document.getElementById('phone-modal').classList.add('open');
-window.openPC = () => document.getElementById('pc-modal').classList.add('open');
-window.closeModal = id => document.getElementById(id).classList.remove('open');
-document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open')); });
+    .tour-step-heading {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      line-height: 1.35;
+    }
 
-window.switchTab = function (tabId) {
-  document.querySelectorAll('.phone-tab').forEach((t, i) => {
-    const ids = ['tab-passaporte', 'tab-material', 'tab-co2'];
-    t.classList.toggle('active', ids[i] === tabId);
-  });
-  document.querySelectorAll('.phone-tab-panel').forEach(p => p.classList.toggle('active', p.id === tabId));
-};
+    .tour-step-text {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 400px;
+    }
 
-function animate(ts) { requestAnimationFrame(animate); controls.update(); tickIdlePulse(ts); updateLabel(); renderer.render(scene, camera); }
-animate(0);
-</script>
+
+    .tour-footer {
+      padding: 14px 22px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+    }
+
+    .tour-dots {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .tour-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .12);
+      transition: all .2s;
+      cursor: pointer;
+    }
+
+    .tour-dot.active {
+      background: var(--green-400);
+      width: 18px;
+      border-radius: 3px;
+    }
+
+    .tour-nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .tour-btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      padding: 7px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all .2s;
+      border: 1px solid;
+    }
+
+    .tour-btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border-color: rgba(255, 255, 255, .1);
+    }
+
+    .tour-btn-ghost:hover {
+      background: rgba(255, 255, 255, .06);
+      color: var(--text-primary);
+    }
+
+    .tour-btn-primary {
+      background: rgba(34, 197, 94, .15);
+      color: var(--green-400);
+      border-color: rgba(34, 197, 94, .35);
+    }
+
+    .tour-btn-primary:hover {
+      background: rgba(34, 197, 94, .26);
+      border-color: rgba(34, 197, 94, .6);
+    }
+
+
+    .tour-svg {
+      overflow: visible;
+    }
+
+
+    @keyframes drag-chip-anim {
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      30% {
+        transform: translate(0, 0) scale(1.12);
+      }
+
+      70% {
+        transform: translate(78px, -10px) scale(1.08);
+      }
+
+      85% {
+        transform: translate(130px, -4px) scale(1.02);
+      }
+
+      100% {
+        transform: translate(130px, -4px) scale(1);
+      }
+    }
+
+    @keyframes glow-truck {
+
+      0%,
+      60% {
+        opacity: 0;
+      }
+
+      85% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: .7;
+      }
+    }
+
+    @keyframes arrow-march {
+      0% {
+        stroke-dashoffset: 40;
+        opacity: 0;
+      }
+
+      30% {
+        opacity: 1;
+      }
+
+      100% {
+        stroke-dashoffset: 0;
+        opacity: 1;
+      }
+    }
+
+    @keyframes float-phone {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        r: 18;
+        opacity: .5;
+      }
+
+      100% {
+        r: 32;
+        opacity: 0;
+      }
+    }
+
+    @keyframes scan-line {
+      0% {
+        transform: translateY(0);
+        opacity: .9;
+      }
+
+      100% {
+        transform: translateY(40px);
+        opacity: 0;
+      }
+    }
+
+    @keyframes dashboard-bars {
+      from {
+        transform: scaleY(0);
+        transform-origin: bottom;
+      }
+
+      to {
+        transform: scaleY(1);
+        transform-origin: bottom;
+      }
+    }
+
+    @keyframes data-flow {
+      0% {
+        stroke-dashoffset: 60;
+        opacity: 0;
+      }
+
+      20% {
+        opacity: 1;
+      }
+
+      100% {
+        stroke-dashoffset: 0;
+        opacity: .6;
+      }
+    }
+  </style>
+
+  <div id="tour-overlay">
+    <div id="tour-card">
+
+      <div class="tour-header">
+        <div class="tour-brand">
+          <div class="tour-brand-dot">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="rgba(0,0,0,.7)" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div>
+            <div class="tour-title">Visão Geral</div>
+            <div class="tour-subtitle">CSM · Carenagem Sustentável</div>
+          </div>
+        </div>
+        <button class="tour-close-btn" onclick="closeTour()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+
+      <div class="tour-steps">
+
+
+        <div class="tour-step active" id="tour-step-1">
+          <div class="tour-step-visual">
+            <svg class="tour-svg" width="320" height="130" viewBox="0 0 320 130">
+
+              <rect x="130" y="42" width="140" height="58" rx="5" fill="rgba(13,21,33,.9)"
+                stroke="rgba(255,255,255,.08)" stroke-width="1" />
+              <rect x="250" y="55" width="42" height="40" rx="4" fill="rgba(17,29,46,.95)"
+                stroke="rgba(255,255,255,.08)" stroke-width="1" />
+              <circle cx="157" cy="104" r="11" fill="rgba(13,21,33,.9)" stroke="rgba(255,255,255,.12)"
+                stroke-width="1.5" />
+              <circle cx="157" cy="104" r="5" fill="rgba(255,255,255,.08)" />
+              <circle cx="247" cy="104" r="11" fill="rgba(13,21,33,.9)" stroke="rgba(255,255,255,.12)"
+                stroke-width="1.5" />
+              <circle cx="247" cy="104" r="5" fill="rgba(255,255,255,.08)" />
+
+              <rect x="258" y="63" width="30" height="18" rx="3" fill="rgba(96,165,250,.12)"
+                stroke="rgba(96,165,250,.2)" stroke-width="1" />
+
+              <rect x="238" y="48" width="42" height="40" rx="5" fill="rgba(34,197,94,.0)" stroke="rgba(34,197,94,.0)"
+                stroke-width="1.5" style="animation:glow-truck 2.2s ease 1s infinite alternate" />
+
+              <path d="M88 74 C110 74 118 68 136 68" stroke="rgba(34,197,94,.5)" stroke-width="1.5"
+                stroke-dasharray="6 4" fill="none" style="animation:arrow-march 2.2s ease .4s infinite" />
+              <polygon points="136,64 144,68 136,72" fill="rgba(34,197,94,.5)"
+                style="animation:arrow-march 2.2s ease .4s infinite" />
+
+              <g style="animation:drag-chip-anim 2.2s cubic-bezier(.22,1,.36,1) .2s infinite">
+                <rect x="50" y="52" width="42" height="42" rx="8" fill="url(#chipGrad)" filter="url(#chipShadow)" />
+                <text x="71" y="70" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="7"
+                  font-weight="600" fill="rgba(0,0,0,.6)">PP</text>
+                <text x="71" y="81" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="6"
+                  fill="rgba(0,0,0,.5)">R30</text>
+
+                <circle cx="64" cy="88" r="1.5" fill="rgba(0,0,0,.3)" />
+                <circle cx="71" cy="88" r="1.5" fill="rgba(0,0,0,.3)" />
+                <circle cx="78" cy="88" r="1.5" fill="rgba(0,0,0,.3)" />
+              </g>
+
+              <text x="71" y="108" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="8"
+                fill="rgba(122,143,166,.7)"
+                style="animation:drag-chip-anim 2.2s cubic-bezier(.22,1,.36,1) .2s infinite">arrastar</text>
+
+              <text x="193" y="36" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="8"
+                fill="rgba(122,143,166,.6)">Caminhão</text>
+              <defs>
+                <linearGradient id="chipGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#16a34a" />
+                  <stop offset="100%" stop-color="#4ade80" />
+                </linearGradient>
+                <filter id="chipShadow">
+                  <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(34,197,94,.4)" />
+                </filter>
+              </defs>
+            </svg>
+          </div>
+          <div class="tour-step-body">
+            <div class="tour-step-num">Passo 01 / 03</div>
+            <div class="tour-step-heading">Arraste o PP até a cabine</div>
+            <div class="tour-step-text">
+              O chip verde representa a carenagem de Polipropileno. Arraste-o até a cabine do caminhão para simular a
+              instalação e ver o impacto nos KPIs de eficiência e CO₂.
+            </div>
+          </div>
+        </div>
+
+
+        <div class="tour-step" id="tour-step-2">
+          <div class="tour-step-visual">
+            <svg class="tour-svg" width="320" height="130" viewBox="0 0 320 130">
+
+              <g style="animation:float-phone 3s ease-in-out infinite">
+                <rect x="118" y="12" width="84" height="108" rx="12" fill="rgba(10,15,26,.95)"
+                  stroke="rgba(30,45,66,.9)" stroke-width="2" />
+                <rect x="142" y="16" width="36" height="6" rx="3" fill="rgba(13,21,33,.9)" />
+                <rect x="121" y="26" width="78" height="80" fill="rgba(8,13,20,.95)" />
+
+                <rect x="126" y="30" width="68" height="10" rx="2" fill="rgba(13,21,33,.8)" />
+                <rect x="128" y="32" width="24" height="6" rx="2" fill="rgba(96,165,250,.2)" />
+                <text x="134" y="37" font-family="'IBM Plex Mono',monospace" font-size="5"
+                  fill="rgba(96,165,250,.7)">MOD-27</text>
+
+                <rect x="126" y="44" width="18" height="18" rx="2" fill="rgba(13,21,33,.8)" stroke="rgba(96,165,250,.2)"
+                  stroke-width="1" />
+                <rect x="128" y="46" width="5" height="5" fill="rgba(96,165,250,.35)" />
+                <rect x="135" y="46" width="5" height="5" fill="rgba(96,165,250,.35)" />
+                <rect x="128" y="53" width="5" height="5" fill="rgba(96,165,250,.35)" />
+
+                <rect x="148" y="46" width="40" height="3" rx="1.5" fill="rgba(255,255,255,.07)" />
+                <rect x="148" y="52" width="30" height="3" rx="1.5" fill="rgba(255,255,255,.05)" />
+                <rect x="148" y="58" width="36" height="3" rx="1.5" fill="rgba(255,255,255,.05)" />
+
+                <rect x="126" y="68" width="62" height="18" rx="3" fill="rgba(34,197,94,.08)"
+                  stroke="rgba(34,197,94,.25)" stroke-width="1" />
+                <text x="157" y="78" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="6"
+                  fill="rgba(74,222,128,.8)">Remanufatura</text>
+
+                <rect x="126" y="92" width="62" height="3" rx="1.5" fill="rgba(255,255,255,.06)" />
+                <rect x="126" y="92" width="40" height="3" rx="1.5" fill="rgba(34,197,94,.6)" />
+
+                <rect x="145" y="114" width="30" height="4" rx="2" fill="rgba(30,45,66,.8)" />
+              </g>
+
+              <line x1="118" y1="54" x2="202" y2="54" stroke="rgba(96,165,250,.4)" stroke-width="1"
+                style="animation:scan-line 2s linear .5s infinite" />
+
+              <text x="52" y="64" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="8"
+                fill="rgba(122,143,166,.6)">Cliente</text>
+              <text x="52" y="76" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="8"
+                fill="rgba(96,165,250,.7)">App</text>
+
+              <path d="M74 70 L112 70" stroke="rgba(96,165,250,.4)" stroke-width="1.2" stroke-dasharray="4 3"
+                fill="none" />
+              <polygon points="112,67 119,70 112,73" fill="rgba(96,165,250,.4)" />
+
+              <text x="268" y="64" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="8"
+                fill="rgba(122,143,166,.6)">Passaporte</text>
+              <text x="268" y="76" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="8"
+                fill="rgba(74,222,128,.7)">Digital</text>
+              <path d="M208 70 L246 70" stroke="rgba(34,197,94,.35)" stroke-width="1.2" stroke-dasharray="4 3"
+                fill="none" />
+              <polygon points="246,67 253,70 246,73" fill="rgba(34,197,94,.35)" />
+            </svg>
+          </div>
+          <div class="tour-step-body">
+            <div class="tour-step-num">Passo 02 / 03</div>
+            <div class="tour-step-heading">Plataforma do cliente</div>
+            <div class="tour-step-text">
+              Pelo botão <span
+                style="font-family:'IBM Plex Mono',monospace;color:var(--blue-400);font-size:11px">Cliente</span> acesse
+              o app mobile com o passaporte digital do módulo — rastreabilidade, histórico de uso, destino recomendado e
+              integração com logística reversa IVECO.
+            </div>
+          </div>
+        </div>
+
+
+        <div class="tour-step" id="tour-step-3">
+          <div class="tour-step-visual">
+            <svg class="tour-svg" width="320" height="130" viewBox="0 0 320 130">
+
+              <rect x="60" y="14" width="200" height="96" rx="6" fill="rgba(10,15,26,.95)" stroke="rgba(30,45,66,.85)"
+                stroke-width="1.5" />
+              <rect x="63" y="17" width="194" height="90" rx="4" fill="rgba(8,13,20,.95)" />
+
+              <rect x="63" y="17" width="194" height="18" rx="4" fill="rgba(6,11,18,.95)" />
+              <circle cx="73" cy="26" r="3.5" fill="rgba(248,113,113,.5)" />
+              <circle cx="83" cy="26" r="3.5" fill="rgba(251,191,36,.4)" />
+              <circle cx="93" cy="26" r="3.5" fill="rgba(74,222,128,.4)" />
+              <text x="160" y="30" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="7"
+                fill="rgba(122,143,166,.6)">IVECO · Dashboard Circular</text>
+
+              <rect x="68" y="40" width="44" height="28" rx="3" fill="rgba(13,21,33,.8)" stroke="rgba(255,255,255,.06)"
+                stroke-width="1" />
+              <text x="90" y="51" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="6"
+                fill="rgba(122,143,166,.6)">CO₂</text>
+              <text x="90" y="61" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="9"
+                font-weight="600" fill="rgba(74,222,128,.9)">−18%</text>
+              <rect x="116" y="40" width="44" height="28" rx="3" fill="rgba(13,21,33,.8)" stroke="rgba(255,255,255,.06)"
+                stroke-width="1" />
+              <text x="138" y="51" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="6"
+                fill="rgba(122,143,166,.6)">Consumo</text>
+              <text x="138" y="61" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="9"
+                font-weight="600" fill="rgba(74,222,128,.9)">−9%</text>
+              <rect x="164" y="40" width="44" height="28" rx="3" fill="rgba(13,21,33,.8)" stroke="rgba(255,255,255,.06)"
+                stroke-width="1" />
+              <text x="186" y="51" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="6"
+                fill="rgba(122,143,166,.6)">Remanuf.</text>
+              <text x="186" y="61" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="9"
+                font-weight="600" fill="rgba(74,222,128,.9)">+72%</text>
+              <rect x="212" y="40" width="40" height="28" rx="3" fill="rgba(13,21,33,.8)" stroke="rgba(255,255,255,.06)"
+                stroke-width="1" />
+              <text x="232" y="51" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="6"
+                fill="rgba(122,143,166,.6)">Frota</text>
+              <text x="232" y="61" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="9"
+                font-weight="600" fill="rgba(96,165,250,.9)">A-082</text>
+
+              <rect x="68" y="74" width="4" height="16" rx="1" fill="rgba(34,197,94,.3)"
+                style="animation:dashboard-bars .6s ease .1s both" />
+              <rect x="76" y="68" width="4" height="22" rx="1" fill="rgba(34,197,94,.4)"
+                style="animation:dashboard-bars .6s ease .2s both" />
+              <rect x="84" y="72" width="4" height="18" rx="1" fill="rgba(34,197,94,.35)"
+                style="animation:dashboard-bars .6s ease .3s both" />
+              <rect x="92" y="64" width="4" height="26" rx="1" fill="rgba(74,222,128,.6)"
+                style="animation:dashboard-bars .6s ease .4s both" />
+              <rect x="100" y="70" width="4" height="20" rx="1" fill="rgba(34,197,94,.4)"
+                style="animation:dashboard-bars .6s ease .5s both" />
+              <rect x="108" y="66" width="4" height="24" rx="1" fill="rgba(74,222,128,.5)"
+                style="animation:dashboard-bars .6s ease .6s both" />
+
+              <path d="M120 82 Q160 70 200 80" stroke="rgba(96,165,250,.3)" stroke-width="1" fill="none"
+                stroke-dasharray="5 3" style="animation:data-flow 2.5s ease infinite" />
+              <path d="M125 88 Q165 76 205 86" stroke="rgba(34,197,94,.25)" stroke-width="1" fill="none"
+                stroke-dasharray="5 3" style="animation:data-flow 2.5s ease .4s infinite" />
+
+              <circle cx="90" cy="54" r="18" fill="none" stroke="rgba(34,197,94,.25)"
+                style="animation:pulse-ring 2s ease-out .5s infinite" />
+            </svg>
+          </div>
+          <div class="tour-step-body">
+            <div class="tour-step-num">Passo 03 / 03</div>
+            <div class="tour-step-heading">Dashboard IVECO</div>
+            <div class="tour-step-text">
+              Pelo botão <span
+                style="font-family:'IBM Plex Mono',monospace;color:var(--amber-400);font-size:11px">Dashboard PC</span>
+              veja a visão consolidada da frota — emissões, consumo, taxa de remanufatura e fluxo circular de peças em
+              tempo real.
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="tour-footer">
+        <div class="tour-dots">
+          <div class="tour-dot active" id="dot-1" onclick="goTourStep(1)"></div>
+          <div class="tour-dot" id="dot-2" onclick="goTourStep(2)"></div>
+          <div class="tour-dot" id="dot-3" onclick="goTourStep(3)"></div>
+        </div>
+        <div class="tour-nav">
+          <button class="tour-btn tour-btn-ghost" id="tour-prev" onclick="tourPrev()" style="display:none">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-right:4px;vertical-align:middle">
+              <path d="M7 2L3 5l4 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            Voltar
+          </button>
+          <button class="tour-btn tour-btn-primary" id="tour-next" onclick="tourNext()">
+            Próximo
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-left:4px;vertical-align:middle">
+              <path d="M3 2l4 3-4 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      let currentStep = 1;
+      const totalSteps = 3;
+
+      function goTourStep(n) {
+        document.getElementById('tour-step-' + currentStep).classList.remove('active');
+        document.getElementById('dot-' + currentStep).classList.remove('active');
+        currentStep = n;
+        document.getElementById('tour-step-' + currentStep).classList.add('active');
+        document.getElementById('dot-' + currentStep).classList.add('active');
+        document.getElementById('tour-prev').style.display = currentStep > 1 ? '' : 'none';
+        const nextBtn = document.getElementById('tour-next');
+        if (currentStep === totalSteps) {
+          nextBtn.innerHTML = 'Entendi <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-left:4px;vertical-align:middle"><path d="M2 5h6M5 2l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        } else {
+          nextBtn.innerHTML = 'Próximo <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-left:4px;vertical-align:middle"><path d="M3 2l4 3-4 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+      }
+
+      window.goTourStep = goTourStep;
+      window.tourNext = function () {
+        if (currentStep < totalSteps) goTourStep(currentStep + 1);
+        else closeTour();
+      };
+      window.tourPrev = function () {
+        if (currentStep > 1) goTourStep(currentStep - 1);
+      };
+      window.closeTour = function () {
+        document.getElementById('tour-overlay').classList.remove('open');
+      };
+
+
+      setTimeout(() => {
+        document.getElementById('tour-overlay').classList.add('open');
+      }, 600);
+
+
+      document.getElementById('tour-overlay').addEventListener('click', function (e) {
+        if (e.target === this) closeTour();
+      });
+    })();
+  </script>
 </body>
+
 </html>
